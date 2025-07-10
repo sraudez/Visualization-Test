@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/sraudez/Visualization-Test.git/static/css/main.16854e50.css",
+    "main.js": "/sraudez/Visualization-Test.git/static/js/main.c295b9fd.js",
+    "index.html": "/sraudez/Visualization-Test.git/index.html",
+    "main.16854e50.css.map": "/sraudez/Visualization-Test.git/static/css/main.16854e50.css.map",
+    "main.c295b9fd.js.map": "/sraudez/Visualization-Test.git/static/js/main.c295b9fd.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.16854e50.css",
+    "static/js/main.c295b9fd.js"
+  ]
+}
