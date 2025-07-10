@@ -140,7 +140,7 @@ function Map(props) {
   // Fetch CSV only once
   useEffect(() => {
     if (!csvLoaded) {
-      fetch('/sample.csv')
+      fetch(process.env.PUBLIC_URL + '/sample.csv')
         .then(res => res.text())
         .then(text => {
           const parsed = parseCSV(text);
@@ -156,7 +156,7 @@ function Map(props) {
   // Always fetch green_score.csv on mount
   useEffect(() => {
     if (!greenScoreLoaded) {
-      fetch('/green_score.csv')
+      fetch(process.env.PUBLIC_URL + '/green_score.csv')
         .then(res => res.text())
         .then(text => {
           const parsed = parseCSV(text);
@@ -238,40 +238,31 @@ function Map(props) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [scoreRangeDropdownOpen]);
 
-  const handleToggle = async (e) => {
-    const checked = e.target.checked;
-    setShowCensusTracts(checked);
-    if (checked && mapRef.current) {
-      // Fetch and add GeoJSON
-      const response = await fetch('/census_tracts.geojson.json');
-      const geojson = await response.json();
-      if (dataLayerRef.current) {
-        dataLayerRef.current.setMap(null);
-      }
-      const dataLayer = new window.google.maps.Data({
-        map: mapRef.current,
-        style: {
-          fillColor: '#cccccc',
-          fillOpacity: 0.5,
-          strokeColor: '#555555', // darker grey for boundaries
-          strokeWeight: 2,
-        },
-      });
-      dataLayer.addGeoJson(geojson);
-      dataLayerRef.current = dataLayer;
-    } else if (dataLayerRef.current) {
-      dataLayerRef.current.setMap(null);
-      dataLayerRef.current = null;
-    }
-  };
-
   const handleMapLoad = (map) => {
     mapRef.current = map;
     // Store reference to Street View panorama
     streetViewRef.current = map.getStreetView();
     // If toggle is on, add the layer
     if (showCensusTracts) {
-      handleToggle({ target: { checked: true } });
+      // Fetch and add GeoJSON
+      fetch('/census_tracts.geojson.json')
+        .then(response => response.json())
+        .then(geojson => {
+          if (dataLayerRef.current) {
+            dataLayerRef.current.setMap(null);
+          }
+          const dataLayer = new window.google.maps.Data({
+            map: mapRef.current,
+            style: {
+              fillColor: '#cccccc',
+              fillOpacity: 0.5,
+              strokeColor: '#555555', // darker grey for boundaries
+              strokeWeight: 2,
+            },
+          });
+          dataLayer.addGeoJson(geojson);
+          dataLayerRef.current = dataLayer;
+        });
     }
     // Listen for zoom changes
     map.addListener('zoom_changed', () => {
@@ -353,8 +344,6 @@ function Map(props) {
     }
   };
 
-  // Download static map image handler
-
   return (
     <div style={{ position: 'relative' }}>
       <Draggable nodeRef={controlBarRef}>
@@ -374,36 +363,115 @@ function Map(props) {
           boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
           cursor: 'move'
         }}>
-          <label style={{ margin: 0 }}>
-            <input type="checkbox" checked={showCensusTracts} onChange={handleToggle} /> Show Census Tracts
-          </label>
+          <button
+            style={{ 
+              padding: 8, 
+              borderRadius: 4, 
+              background: showCensusTracts ? '#007bff' : 'white', 
+              color: showCensusTracts ? 'white' : 'black',
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease',
+              ':hover': {
+                background: '#f0f0f0',
+                borderColor: '#999',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }
+            }}
+            onMouseEnter={(e) => {
+              if (!showCensusTracts) {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              } else {
+                e.target.style.background = '#0056b3';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showCensusTracts) {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              } else {
+                e.target.style.background = '#007bff';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }
+            }}
+            onClick={() => {
+              const newState = !showCensusTracts;
+              setShowCensusTracts(newState);
+              if (newState && mapRef.current) {
+                // Fetch and add GeoJSON
+                fetch(process.env.PUBLIC_URL + '/census_tracts.geojson.json')
+                  .then(response => response.json())
+                  .then(geojson => {
+                    if (dataLayerRef.current) {
+                      dataLayerRef.current.setMap(null);
+                    }
+                    const dataLayer = new window.google.maps.Data({
+                      map: mapRef.current,
+                      style: {
+                        fillColor: '#cccccc',
+                        fillOpacity: 0.5,
+                        strokeColor: '#555555', // darker grey for boundaries
+                        strokeWeight: 2,
+                      },
+                    });
+                    dataLayer.addGeoJson(geojson);
+                    dataLayerRef.current = dataLayer;
+                  });
+              } else if (dataLayerRef.current) {
+                dataLayerRef.current.setMap(null);
+                dataLayerRef.current = null;
+              }
+            }}
+          >
+            {showCensusTracts ? 'Hide Census Tracts' : 'Show Census Tracts'}
+          </button>
           <div style={{ position: 'relative' }}>
-            <button className="layers-btn" style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }} onClick={() => setLayersDropdownOpen(v => !v)}>
+            <button className="layers-btn" style={{ 
+              padding: 8, 
+              borderRadius: 4, 
+              background: 'white', 
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }} 
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+            onClick={() => setLayersDropdownOpen(v => !v)}>
               Layers
             </button>
             {layersDropdownOpen && (
               <div className="layers-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 12, minWidth: 200, zIndex: 10 }}>
-                <label style={{ display: 'block', marginBottom: 8 }}>
+                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
                   <input type="checkbox" checked={showCsvPoints} onChange={e => setShowCsvPoints(e.target.checked)} /> Traffic Signal set
                 </label>
-                <label style={{ display: 'block', marginBottom: 4 }}>
+                <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
                   <input type="checkbox" checked={showGreenScore} onChange={e => setShowGreenScore(e.target.checked)} /> Green Score set
                 </label>
               </div>
             )}
           </div>
-          <button
-            style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
-            onClick={() => {
-              if (mapRef.current) {
-                mapRef.current.setCenter(initialCenter);
-                mapRef.current.setZoom(initialZoom);
-                setZoom(initialZoom);
-              }
-            }}
-          >
-            Recenter
-          </button>
+          
           <button
             style={{ 
               padding: 8, 
@@ -412,7 +480,32 @@ function Map(props) {
               color: measurementMode ? 'white' : 'black',
               border: '1px solid #ccc', 
               cursor: 'pointer', 
-              fontWeight: 600 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!measurementMode) {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              } else {
+                e.target.style.background = '#45a049';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!measurementMode) {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              } else {
+                e.target.style.background = '#4CAF50';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }
             }}
             onClick={() => setMeasurementMode(!measurementMode)}
           >
@@ -420,6 +513,18 @@ function Map(props) {
           </button>
           <button
             style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
             onClick={() => {
               setShowCensusTracts(false);
               setShowCsvPoints(false);
@@ -439,6 +544,130 @@ function Map(props) {
             }}
           >
             Reset
+          </button>
+          <button
+            style={{ 
+              padding: 8, 
+              borderRadius: 4, 
+              background: 'white', 
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+            onClick={() => {
+              if (mapRef.current) {
+                mapRef.current.setCenter(initialCenter);
+                mapRef.current.setZoom(initialZoom);
+                setZoom(initialZoom);
+              }
+            }}
+          >
+            Recenter
+          </button>
+          <button
+            style={{ 
+              padding: 8, 
+              borderRadius: 4, 
+              background: 'white', 
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+            onClick={() => {
+              if (mapRef.current) {
+                // Focus on selected datasets
+                const bounds = new window.google.maps.LatLngBounds();
+                let hasData = false;
+                
+                // Add CSV points to bounds if selected
+                if (showCsvPoints && csvData.length > 0) {
+                  csvData.forEach(row => {
+                    const lat = parseFloat(row.lats);
+                    const lng = parseFloat(row.lons);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      bounds.extend(new window.google.maps.LatLng(lat, lng));
+                      hasData = true;
+                    }
+                  });
+                }
+                
+                // Add Green Score points to bounds if selected
+                if (showGreenScore && greenScoreData.length > 0) {
+                  greenScoreData.forEach(row => {
+                    const lat = parseFloat(row.latitude);
+                    const lng = parseFloat(row.longitude);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                      bounds.extend(new window.google.maps.LatLng(lat, lng));
+                      hasData = true;
+                    }
+                  });
+                }
+                
+                if (hasData) {
+                  mapRef.current.fitBounds(bounds);
+                  // Add some padding to the bounds and zoom in more
+                  const listener = mapRef.current.addListener('bounds_changed', () => {
+                    const currentBounds = mapRef.current.getBounds();
+                    if (currentBounds) {
+                      const ne = currentBounds.getNorthEast();
+                      const sw = currentBounds.getSouthWest();
+                      const latPadding = (ne.lat() - sw.lat()) * 0.1;
+                      const lngPadding = (ne.lng() - sw.lng()) * 0.1;
+                      
+                      const paddedBounds = new window.google.maps.LatLngBounds(
+                        new window.google.maps.LatLng(sw.lat() - latPadding, sw.lng() - lngPadding),
+                        new window.google.maps.LatLng(ne.lat() + latPadding, ne.lng() + lngPadding)
+                      );
+                      
+                      mapRef.current.fitBounds(paddedBounds);
+                      
+                      // Zoom in more after fitting bounds
+                      setTimeout(() => {
+                        const currentZoom = mapRef.current.getZoom();
+                        const newZoom = Math.min(currentZoom + 2, 18); // Zoom in by 2 levels, max zoom 18
+                        mapRef.current.setZoom(newZoom);
+                        setZoom(newZoom);
+                      }, 100);
+                      
+                      window.google.maps.event.removeListener(listener);
+                    }
+                  });
+                } else {
+                  // If no data is selected, recenter to default
+                  mapRef.current.setCenter(initialCenter);
+                  mapRef.current.setZoom(initialZoom);
+                  setZoom(initialZoom);
+                }
+              }
+            }}
+          >
+            Focus
           </button>
         </div>
       </Draggable>
@@ -471,7 +700,14 @@ function Map(props) {
                   strokeWeight: 1,
                   strokeColor: '#222',
                 }}
-                onClick={measurementMode ? null : () => setSelectedMarker({ lat, lng, score, i })}
+                onClick={measurementMode ? null : () => {
+                  setSelectedMarker({ lat, lng, score, i });
+                  // Zoom in and center on the clicked point
+                  if (mapRef.current) {
+                    mapRef.current.setCenter({ lat, lng });
+                    mapRef.current.setZoom(Math.max(zoom + 2, 16)); // Zoom in by 2 levels, minimum zoom 16
+                  }
+                }}
               />
             );
           })}
@@ -499,7 +735,14 @@ function Map(props) {
                   strokeWeight: 1,
                   strokeColor: '#222',
                 }}
-                onClick={measurementMode ? null : () => setSelectedMarker({ lat, lng, score, i })}
+                onClick={measurementMode ? null : () => {
+                  setSelectedMarker({ lat, lng, score, i });
+                  // Zoom in and center on the clicked point
+                  if (mapRef.current) {
+                    mapRef.current.setCenter({ lat, lng });
+                    mapRef.current.setZoom(Math.max(zoom + 2, 16)); // Zoom in by 2 levels, minimum zoom 16
+                  }
+                }}
               />
             );
           })}
@@ -507,18 +750,26 @@ function Map(props) {
           {selectedMarker && (
             <InfoWindow
               position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-              onCloseClick={() => setSelectedMarker(null)}
+              onCloseClick={() => {
+                setSelectedMarker(null);
+                // Return to initial center and zoom (same as Recenter button)
+                if (mapRef.current) {
+                  mapRef.current.setCenter(initialCenter);
+                  mapRef.current.setZoom(initialZoom);
+                  setZoom(initialZoom);
+                }
+              }}
             >
-              <div>
-                <div><strong>Latitude:</strong> {selectedMarker.lat}</div>
-                <div><strong>Longitude:</strong> {selectedMarker.lng}</div>
+              <div style={{ color: 'black', fontSize: '14px', lineHeight: '1.4' }}>
+                <div><strong>Latitude:</strong> {selectedMarker.lat.toFixed(6)}</div>
+                <div><strong>Longitude:</strong> {selectedMarker.lng.toFixed(6)}</div>
                 <div><strong>Safety Score:</strong> {selectedMarker.score}</div>
               </div>
             </InfoWindow>
           )}
           {/* Heatmap Layer */}
           <HeatmapLayer data={showHeatmap ? heatmapData : []} options={{ radius: 10 + (heatmapRadiusLevel - 1) * 10, opacity: 0.6 }} />
-      </GoogleMap>
+        </GoogleMap>
     </LoadScript>
       
       {/* Distance Measurement Display */}
@@ -556,7 +807,20 @@ function Map(props) {
                   border: '1px solid #ccc', 
                   cursor: 'pointer', 
                   fontWeight: 600,
-                  fontSize: 12
+                  fontSize: 12,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#f0f0f0';
+                  e.target.style.borderColor = '#999';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'white';
+                  e.target.style.borderColor = '#ccc';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
                 }}
                 onClick={resetMeasurement}
               >
@@ -578,28 +842,85 @@ function Map(props) {
           gap: 24,
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 18
+          fontSize: 18,
+          color: 'black'
         }}>
-          <label>
-            <input type="checkbox" checked={showHeatmap} onChange={e => setShowHeatmap(e.target.checked)} /> Show Heatmap
-          </label>
-          <label style={{ marginLeft: 24 }}>
+          <button
+            style={{ 
+              padding: 8, 
+              borderRadius: 4, 
+              background: showHeatmap ? '#007bff' : 'white', 
+              color: showHeatmap ? 'white' : 'black',
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!showHeatmap) {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              } else {
+                e.target.style.background = '#0056b3';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!showHeatmap) {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              } else {
+                e.target.style.background = '#007bff';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }
+            }}
+            onClick={() => setShowHeatmap(!showHeatmap)}
+          >
+            {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+          </button>
+          <label style={{ marginLeft: 24, color: 'black' }}>
             Data set:
             <select
               value={heatmapSource}
               onChange={e => setHeatmapSource(e.target.value)}
               style={{ marginLeft: 8, verticalAlign: 'middle' }}
-              disabled={!showCsvPoints && !showGreenScore}
+              disabled={!csvLoaded && !greenScoreLoaded}
             >
-              {showCsvPoints && <option value="csv">Traffic Signal (yes/no)</option>}
-              {showGreenScore && <option value="green_score">Green Score (1-10)</option>}
+              {csvLoaded && <option value="csv">Traffic Signal (yes/no)</option>}
+              {greenScoreLoaded && <option value="green_score">Green Score (1-10)</option>}
             </select>
           </label>
           {/* Score Range UI */}
           <div style={{ marginLeft: 24, position: 'relative', display: 'inline-block' }}>
             <button
               className="score-range-btn"
-              style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
               onClick={() => setScoreRangeDropdownOpen(v => !v)}
             >
               Score Range
@@ -608,17 +929,17 @@ function Map(props) {
               <div className="score-range-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 16, minWidth: 200, zIndex: 10 }}>
                 {heatmapSource === 'csv' && (
                   <>
-                    <label style={{ display: 'block', marginBottom: 8 }}>
+                    <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
                       <input type="checkbox" checked={props.scoreRangeYes} onChange={e => props.setScoreRangeYes(e.target.checked)} /> Yes
                     </label>
-                    <label style={{ display: 'block', marginBottom: 4 }}>
+                    <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
                       <input type="checkbox" checked={props.scoreRangeNo} onChange={e => props.setScoreRangeNo(e.target.checked)} /> No
                     </label>
                   </>
                 )}
                 {heatmapSource === 'green_score' && (
                   <>
-                    <label style={{ display: 'block', marginBottom: 8 }}>
+                    <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
                       Min:
                       <input
                         type="number"
@@ -629,7 +950,7 @@ function Map(props) {
                         style={{ width: 48, marginLeft: 8 }}
                       />
                     </label>
-                    <label style={{ display: 'block' }}>
+                    <label style={{ display: 'block', color: 'black' }}>
                       Max:
                       <input
                         type="number"
@@ -646,12 +967,33 @@ function Map(props) {
             )}
           </div>
           <button
-            style={{ marginLeft: 24, padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
+            style={{ 
+              marginLeft: 24, 
+              padding: 8, 
+              borderRadius: 4, 
+              background: 'white', 
+              border: '1px solid #ccc', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
             onClick={resetFilters}
           >
             Reset Filters
           </button>
-          <label style={{ marginLeft: 24 }}>
+          <label style={{ marginLeft: 24, color: 'black' }}>
             Interpolation (Radius):
             <input
               type="range"
@@ -661,7 +1003,7 @@ function Map(props) {
               onChange={e => setHeatmapRadiusLevel(Number(e.target.value))}
               style={{ marginLeft: 8, verticalAlign: 'middle' }}
             />
-            <span style={{ marginLeft: 8 }}>{10 + (heatmapRadiusLevel - 1) * 10}</span>
+            <span style={{ marginLeft: 8, color: 'black' }}>{10 + (heatmapRadiusLevel - 1) * 10}</span>
           </label>
           {/* Add more controls here as needed */}
         </div>

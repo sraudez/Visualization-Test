@@ -1,4 +1,3 @@
-import './App.css';
 import Map from './Map';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, ScatterChart, Scatter, ResponsiveContainer } from 'recharts';
 import { useState } from 'react';
@@ -373,7 +372,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1 style={{ color: 'white' }}>Urban Health Liveability Visualization</h1>
+      <h1 style={{ color: 'white', textAlign: 'center' }}>Urban Health Liveability Visualization</h1>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', width: '100%', gap: 32, marginTop: 10 }}>
         <div style={{ flex: 3, minWidth: 0 }}>
           <Map
@@ -397,7 +396,27 @@ function App() {
             marginBottom: 24 
           }}>
             <button
-              style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
               onClick={() => setShowChart(v => !v)}
             >
               {showChart ? 'Hide Chart' : 'Create Chart'}
@@ -410,13 +429,72 @@ function App() {
                   background: 'white', 
                   border: '1px solid #ccc', 
                   cursor: 'pointer', 
-                  fontWeight: 600
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#f0f0f0';
+                  e.target.style.borderColor = '#999';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'white';
+                  e.target.style.borderColor = '#ccc';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
                 }}
                 onClick={() => setShowStats(true)}
               >
                 Show Stats
               </button>
             ) : null}
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+              onClick={() => {
+                const data = dataSet === 'csv' ? filteredCsvData : filteredGreenScoreData;
+                const headers = Object.keys(data[0] || {});
+                const csvContent = [
+                  headers.join(','),
+                  ...data.map(row => headers.map(header => {
+                    const value = row[header];
+                    return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+                  }).join(','))
+                ];
+                const csvString = csvContent.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${dataSet}-${chartType}-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Export CSV
+            </button>
           </div>
           {showChart && (
             <>
@@ -470,7 +548,20 @@ function App() {
                     border: '1px solid #ccc', 
                     cursor: 'pointer', 
                     fontWeight: 600,
-                    fontSize: 12
+                    fontSize: 12,
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#f0f0f0';
+                    e.target.style.borderColor = '#999';
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'white';
+                    e.target.style.borderColor = '#ccc';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
                   }}
                   onClick={() => setShowStats(false)}
                 >
