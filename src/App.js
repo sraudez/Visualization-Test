@@ -357,6 +357,12 @@ function App() {
   const [scoreRangeMax, setScoreRangeMax] = useState(10);
   const [scoreRangeYes, setScoreRangeYes] = useState(true);
   const [scoreRangeNo, setScoreRangeNo] = useState(true);
+  
+  // Control bar visibility state
+  const [controlBarOpen, setControlBarOpen] = useState(false);
+  
+  // Tooltip state
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Filter greenScoreData for chart
   const filteredGreenScoreData = greenScoreData.filter(row => {
@@ -372,7 +378,69 @@ function App() {
 
   return (
     <div className="App">
-      <h1 style={{ color: 'white', textAlign: 'center' }}>Urban Health Liveability Visualization</h1>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '0 16px',
+        marginBottom: 10
+      }}>
+        {!controlBarOpen && (
+          <div style={{ position: 'relative' }}>
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'rgba(255, 255, 255, 0.9)', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 1)';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                setShowTooltip(true);
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255, 255, 255, 0.9)';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
+                setShowTooltip(false);
+              }}
+              onClick={() => setControlBarOpen(true)}
+            >
+              <img 
+                src={process.env.PUBLIC_URL + '/menu_icon.png'} 
+                alt="Menu" 
+                style={{ width: 24, height: 24 }}
+              />
+            </button>
+            {showTooltip && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: 4,
+                background: 'rgba(0, 0, 0, 0.8)',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: 4,
+                fontSize: 12,
+                whiteSpace: 'nowrap',
+                zIndex: 1000,
+                pointerEvents: 'none'
+              }}>
+                Map Controls
+              </div>
+            )}
+          </div>
+        )}
+        <h1 style={{ color: 'white', textAlign: 'center', margin: 0, flex: 1 }}>Urban Health Liveability Visualization</h1>
+        {!controlBarOpen && <div style={{ width: 40 }}></div>}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', width: '100%', gap: 32, marginTop: 10 }}>
         <div style={{ flex: 3, minWidth: 0 }}>
           <Map
@@ -386,6 +454,8 @@ function App() {
             setScoreRangeYes={setScoreRangeYes}
             scoreRangeNo={scoreRangeNo}
             setScoreRangeNo={setScoreRangeNo}
+            controlBarOpen={controlBarOpen}
+            setControlBarOpen={setControlBarOpen}
           />
         </div>
         <div style={{ flex: 2, minWidth: 320 }}>
@@ -531,7 +601,7 @@ function App() {
                 width: 'fit-content', 
                 boxShadow: '0 2px 8px rgba(0,0,0,0.07)' 
               }}>
-                <span style={{ fontSize: 12, fontWeight: 600 }}>Statistics Data Set:</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'black' }}>Statistics Data Set:</span>
                 <select 
                   value={statsDataSet} 
                   onChange={e => setStatsDataSet(e.target.value)}

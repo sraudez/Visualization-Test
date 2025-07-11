@@ -124,7 +124,7 @@ function Map(props) {
   const [measurementPolyline, setMeasurementPolyline] = useState(null);
   const controlBarRef = useRef(null);
   const streetViewRef = useRef(null);
-
+  
   // CSV parsing helper
   function parseCSV(text) {
     const lines = text.trim().split('\n');
@@ -346,331 +346,363 @@ function Map(props) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <Draggable nodeRef={controlBarRef}>
-        <div ref={controlBarRef} style={{ 
-          position: 'absolute', 
-          top: 16, 
-          left: '50%', 
-          transform: 'translateX(-50%)', 
-          zIndex: 2000,
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 16, 
-          background: 'rgba(255, 255, 255, 0.9)', 
-          padding: 8, 
-          borderRadius: 8, 
-          width: 'fit-content', 
-          boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-          cursor: 'move'
-        }}>
-          <button
-            style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: showCensusTracts ? '#007bff' : 'white', 
-              color: showCensusTracts ? 'white' : 'black',
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease',
-              ':hover': {
-                background: '#f0f0f0',
-                borderColor: '#999',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }
-            }}
-            onMouseEnter={(e) => {
-              if (!showCensusTracts) {
+      {props.controlBarOpen && (
+        // Full draggable control bar when open
+        <Draggable nodeRef={controlBarRef}>
+          <div ref={controlBarRef} style={{ 
+            position: 'absolute', 
+            top: 16, 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 2000,
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 16, 
+            background: 'rgba(255, 255, 255, 0.9)', 
+            padding: 8, 
+            borderRadius: 8, 
+            width: 'fit-content', 
+            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+            cursor: 'move'
+          }}>
+            {/* Close button */}
+            <button
+              style={{ 
+                padding: 4, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                fontSize: 12,
+                transition: 'all 0.2s ease',
+                marginRight: 8
+              }}
+              onMouseEnter={(e) => {
                 e.target.style.background = '#f0f0f0';
                 e.target.style.borderColor = '#999';
                 e.target.style.transform = 'translateY(-1px)';
                 e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              } else {
-                e.target.style.background = '#0056b3';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!showCensusTracts) {
+              }}
+              onMouseLeave={(e) => {
                 e.target.style.background = 'white';
                 e.target.style.borderColor = '#ccc';
                 e.target.style.transform = 'translateY(0)';
                 e.target.style.boxShadow = 'none';
-              } else {
-                e.target.style.background = '#007bff';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }
-            }}
-            onClick={() => {
-              const newState = !showCensusTracts;
-              setShowCensusTracts(newState);
-              if (newState && mapRef.current) {
-                // Fetch and add GeoJSON
-                fetch(process.env.PUBLIC_URL + '/census_tracts.geojson.json')
-                  .then(response => response.json())
-                  .then(geojson => {
-                    if (dataLayerRef.current) {
-                      dataLayerRef.current.setMap(null);
-                    }
-                    const dataLayer = new window.google.maps.Data({
-                      map: mapRef.current,
-                      style: {
-                        fillColor: '#cccccc',
-                        fillOpacity: 0.5,
-                        strokeColor: '#555555', // darker grey for boundaries
-                        strokeWeight: 2,
-                      },
-                    });
-                    dataLayer.addGeoJson(geojson);
-                    dataLayerRef.current = dataLayer;
-                  });
-              } else if (dataLayerRef.current) {
-                dataLayerRef.current.setMap(null);
-                dataLayerRef.current = null;
-              }
-            }}
-          >
-            {showCensusTracts ? 'Hide Census Tracts' : 'Show Census Tracts'}
-          </button>
-          <div style={{ position: 'relative' }}>
-            <button className="layers-btn" style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: 'white', 
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }} 
-            onMouseEnter={(e) => {
-              e.target.style.background = '#f0f0f0';
-              e.target.style.borderColor = '#999';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'white';
-              e.target.style.borderColor = '#ccc';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-            onClick={() => setLayersDropdownOpen(v => !v)}>
-              Layers
+              }}
+              onClick={() => props.setControlBarOpen(false)}
+            >
+              ✕
             </button>
-            {layersDropdownOpen && (
-              <div className="layers-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 12, minWidth: 200, zIndex: 10 }}>
-                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                  <input type="checkbox" checked={showCsvPoints} onChange={e => setShowCsvPoints(e.target.checked)} /> Traffic Signal set
-                </label>
-                <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
-                  <input type="checkbox" checked={showGreenScore} onChange={e => setShowGreenScore(e.target.checked)} /> Green Score set
-                </label>
-              </div>
-            )}
-          </div>
-          
-          <button
-            style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: measurementMode ? '#4CAF50' : 'white', 
-              color: measurementMode ? 'white' : 'black',
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (!measurementMode) {
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: showCensusTracts ? '#007bff' : 'white', 
+                color: showCensusTracts ? 'white' : 'black',
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+                ':hover': {
+                  background: '#f0f0f0',
+                  borderColor: '#999',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }
+              }}
+              onMouseEnter={(e) => {
+                if (!showCensusTracts) {
+                  e.target.style.background = '#f0f0f0';
+                  e.target.style.borderColor = '#999';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                } else {
+                  e.target.style.background = '#0056b3';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!showCensusTracts) {
+                  e.target.style.background = 'white';
+                  e.target.style.borderColor = '#ccc';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                } else {
+                  e.target.style.background = '#007bff';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }
+              }}
+              onClick={() => {
+                const newState = !showCensusTracts;
+                setShowCensusTracts(newState);
+                if (newState && mapRef.current) {
+                  // Fetch and add GeoJSON
+                  fetch(process.env.PUBLIC_URL + '/census_tracts.geojson.json')
+                    .then(response => response.json())
+                    .then(geojson => {
+                      if (dataLayerRef.current) {
+                        dataLayerRef.current.setMap(null);
+                      }
+                      const dataLayer = new window.google.maps.Data({
+                        map: mapRef.current,
+                        style: {
+                          fillColor: '#cccccc',
+                          fillOpacity: 0.5,
+                          strokeColor: '#555555', // darker grey for boundaries
+                          strokeWeight: 2,
+                        },
+                      });
+                      dataLayer.addGeoJson(geojson);
+                      dataLayerRef.current = dataLayer;
+                    });
+                } else if (dataLayerRef.current) {
+                  dataLayerRef.current.setMap(null);
+                  dataLayerRef.current = null;
+                }
+              }}
+            >
+              {showCensusTracts ? 'Hide Census Tracts' : 'Show Census Tracts'}
+            </button>
+            <div style={{ position: 'relative' }}>
+              <button className="layers-btn" style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }} 
+              onMouseEnter={(e) => {
                 e.target.style.background = '#f0f0f0';
                 e.target.style.borderColor = '#999';
                 e.target.style.transform = 'translateY(-1px)';
                 e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              } else {
-                e.target.style.background = '#45a049';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!measurementMode) {
+              }}
+              onMouseLeave={(e) => {
                 e.target.style.background = 'white';
                 e.target.style.borderColor = '#ccc';
                 e.target.style.transform = 'translateY(0)';
                 e.target.style.boxShadow = 'none';
-              } else {
-                e.target.style.background = '#4CAF50';
+              }}
+              onClick={() => setLayersDropdownOpen(v => !v)}>
+                Layers
+              </button>
+              {layersDropdownOpen && (
+                <div className="layers-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 12, minWidth: 200, zIndex: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
+                    <input type="checkbox" checked={showCsvPoints} onChange={e => setShowCsvPoints(e.target.checked)} /> Traffic Signal set
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
+                    <input type="checkbox" checked={showGreenScore} onChange={e => setShowGreenScore(e.target.checked)} /> Green Score set
+                  </label>
+                </div>
+              )}
+            </div>
+            
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: measurementMode ? '#4CAF50' : 'white', 
+                color: measurementMode ? 'white' : 'black',
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!measurementMode) {
+                  e.target.style.background = '#f0f0f0';
+                  e.target.style.borderColor = '#999';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                } else {
+                  e.target.style.background = '#45a049';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!measurementMode) {
+                  e.target.style.background = 'white';
+                  e.target.style.borderColor = '#ccc';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                } else {
+                  e.target.style.background = '#4CAF50';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }
+              }}
+              onClick={() => setMeasurementMode(!measurementMode)}
+            >
+              {measurementMode ? 'Exit Measure' : 'Measure'}
+            </button>
+            <button
+              style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
                 e.target.style.transform = 'translateY(0)';
                 e.target.style.boxShadow = 'none';
-              }
-            }}
-            onClick={() => setMeasurementMode(!measurementMode)}
-          >
-            {measurementMode ? 'Exit Measure' : 'Measure'}
-          </button>
-          <button
-            style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600 }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#f0f0f0';
-              e.target.style.borderColor = '#999';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'white';
-              e.target.style.borderColor = '#ccc';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-            onClick={() => {
-              setShowCensusTracts(false);
-              setShowCsvPoints(false);
-              setShowGreenScore(false);
-              setLayersDropdownOpen(false);
-              setMeasurementMode(false);
-              if (mapRef.current) {
-                mapRef.current.setCenter(initialCenter);
-                mapRef.current.setZoom(initialZoom);
-                setZoom(initialZoom);
-                // Exit Street View if active
-                if (streetViewRef.current && streetViewRef.current.getVisible()) {
-                  streetViewRef.current.setVisible(false);
+              }}
+              onClick={() => {
+                setShowCensusTracts(false);
+                setShowCsvPoints(false);
+                setShowGreenScore(false);
+                setLayersDropdownOpen(false);
+                setMeasurementMode(false);
+                if (mapRef.current) {
+                  mapRef.current.setCenter(initialCenter);
+                  mapRef.current.setZoom(initialZoom);
+                  setZoom(initialZoom);
+                  // Exit Street View if active
+                  if (streetViewRef.current && streetViewRef.current.getVisible()) {
+                    streetViewRef.current.setVisible(false);
+                  }
                 }
-              }
-              resetFilters();
-            }}
-          >
-            Reset
-          </button>
-          <button
-            style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: 'white', 
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#f0f0f0';
-              e.target.style.borderColor = '#999';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'white';
-              e.target.style.borderColor = '#ccc';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-            onClick={() => {
-              if (mapRef.current) {
-                mapRef.current.setCenter(initialCenter);
-                mapRef.current.setZoom(initialZoom);
-                setZoom(initialZoom);
-              }
-            }}
-          >
-            Recenter
-          </button>
-          <button
-            style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: 'white', 
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#f0f0f0';
-              e.target.style.borderColor = '#999';
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'white';
-              e.target.style.borderColor = '#ccc';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = 'none';
-            }}
-            onClick={() => {
-              if (mapRef.current) {
-                // Focus on selected datasets
-                const bounds = new window.google.maps.LatLngBounds();
-                let hasData = false;
-                
-                // Add CSV points to bounds if selected
-                if (showCsvPoints && csvData.length > 0) {
-                  csvData.forEach(row => {
-                    const lat = parseFloat(row.lats);
-                    const lng = parseFloat(row.lons);
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      bounds.extend(new window.google.maps.LatLng(lat, lng));
-                      hasData = true;
-                    }
-                  });
-                }
-                
-                // Add Green Score points to bounds if selected
-                if (showGreenScore && greenScoreData.length > 0) {
-                  greenScoreData.forEach(row => {
-                    const lat = parseFloat(row.latitude);
-                    const lng = parseFloat(row.longitude);
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      bounds.extend(new window.google.maps.LatLng(lat, lng));
-                      hasData = true;
-                    }
-                  });
-                }
-                
-                if (hasData) {
-                  mapRef.current.fitBounds(bounds);
-                  // Add some padding to the bounds and zoom in more
-                  const listener = mapRef.current.addListener('bounds_changed', () => {
-                    const currentBounds = mapRef.current.getBounds();
-                    if (currentBounds) {
-                      const ne = currentBounds.getNorthEast();
-                      const sw = currentBounds.getSouthWest();
-                      const latPadding = (ne.lat() - sw.lat()) * 0.1;
-                      const lngPadding = (ne.lng() - sw.lng()) * 0.1;
-                      
-                      const paddedBounds = new window.google.maps.LatLngBounds(
-                        new window.google.maps.LatLng(sw.lat() - latPadding, sw.lng() - lngPadding),
-                        new window.google.maps.LatLng(ne.lat() + latPadding, ne.lng() + lngPadding)
-                      );
-                      
-                      mapRef.current.fitBounds(paddedBounds);
-                      
-                      // Zoom in more after fitting bounds
-                      setTimeout(() => {
-                        const currentZoom = mapRef.current.getZoom();
-                        const newZoom = Math.min(currentZoom + 2, 18); // Zoom in by 2 levels, max zoom 18
-                        mapRef.current.setZoom(newZoom);
-                        setZoom(newZoom);
-                      }, 100);
-                      
-                      window.google.maps.event.removeListener(listener);
-                    }
-                  });
-                } else {
-                  // If no data is selected, recenter to default
+                resetFilters();
+              }}
+            >
+              Reset
+            </button>
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+              onClick={() => {
+                if (mapRef.current) {
                   mapRef.current.setCenter(initialCenter);
                   mapRef.current.setZoom(initialZoom);
                   setZoom(initialZoom);
                 }
-              }
-            }}
-          >
-            Focus
-          </button>
-        </div>
-      </Draggable>
+              }}
+            >
+              Recenter
+            </button>
+            <button
+              style={{ 
+                padding: 8, 
+                borderRadius: 4, 
+                background: 'white', 
+                border: '1px solid #ccc', 
+                cursor: 'pointer', 
+                fontWeight: 600,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = '#f0f0f0';
+                e.target.style.borderColor = '#999';
+                e.target.style.transform = 'translateY(-1px)';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'white';
+                e.target.style.borderColor = '#ccc';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = 'none';
+              }}
+              onClick={() => {
+                if (mapRef.current) {
+                  // Focus on selected datasets
+                  const bounds = new window.google.maps.LatLngBounds();
+                  let hasData = false;
+                  
+                  // Add CSV points to bounds if selected
+                  if (showCsvPoints && csvData.length > 0) {
+                    csvData.forEach(row => {
+                      const lat = parseFloat(row.lats);
+                      const lng = parseFloat(row.lons);
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        bounds.extend(new window.google.maps.LatLng(lat, lng));
+                        hasData = true;
+                      }
+                    });
+                  }
+                  
+                  // Add Green Score points to bounds if selected
+                  if (showGreenScore && greenScoreData.length > 0) {
+                    greenScoreData.forEach(row => {
+                      const lat = parseFloat(row.latitude);
+                      const lng = parseFloat(row.longitude);
+                      if (!isNaN(lat) && !isNaN(lng)) {
+                        bounds.extend(new window.google.maps.LatLng(lat, lng));
+                        hasData = true;
+                      }
+                    });
+                  }
+                  
+                  if (hasData) {
+                    mapRef.current.fitBounds(bounds);
+                    // Add some padding to the bounds and zoom in more
+                    const listener = mapRef.current.addListener('bounds_changed', () => {
+                      const currentBounds = mapRef.current.getBounds();
+                      if (currentBounds) {
+                        const ne = currentBounds.getNorthEast();
+                        const sw = currentBounds.getSouthWest();
+                        const latPadding = (ne.lat() - sw.lat()) * 0.1;
+                        const lngPadding = (ne.lng() - sw.lng()) * 0.1;
+                        
+                        const paddedBounds = new window.google.maps.LatLngBounds(
+                          new window.google.maps.LatLng(sw.lat() - latPadding, sw.lng() - lngPadding),
+                          new window.google.maps.LatLng(ne.lat() + latPadding, ne.lng() + lngPadding)
+                        );
+                        
+                        mapRef.current.fitBounds(paddedBounds);
+                        
+                        // Zoom in more after fitting bounds
+                        setTimeout(() => {
+                          const currentZoom = mapRef.current.getZoom();
+                          const newZoom = Math.min(currentZoom + 2, 18); // Zoom in by 2 levels, max zoom 18
+                          mapRef.current.setZoom(newZoom);
+                          setZoom(newZoom);
+                        }, 100);
+                        
+                        window.google.maps.event.removeListener(listener);
+                      }
+                    });
+                  } else {
+                    // If no data is selected, recenter to default
+                    mapRef.current.setCenter(initialCenter);
+                    mapRef.current.setZoom(initialZoom);
+                    setZoom(initialZoom);
+                  }
+                }
+              }}
+            >
+              Focus
+            </button>
+          </div>
+        </Draggable>
+      )}
       <LoadScript googleMapsApiKey="AIzaSyCp6YMW24ocLyfToDWWFs_FmUuN7AwVm4c" libraries={["visualization"]}>
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -769,7 +801,7 @@ function Map(props) {
           )}
           {/* Heatmap Layer */}
           <HeatmapLayer data={showHeatmap ? heatmapData : []} options={{ radius: 10 + (heatmapRadiusLevel - 1) * 10, opacity: 0.6 }} />
-        </GoogleMap>
+      </GoogleMap>
     </LoadScript>
       
       {/* Distance Measurement Display */}
@@ -831,152 +863,77 @@ function Map(props) {
         </div>
       )}
       
-      {anyCsvLayerSelected && (
-        <div style={{
-          marginTop: 16,
-          padding: 16,
-          background: '#f8f8f8',
-          borderRadius: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-          display: 'flex',
-          gap: 24,
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 18,
-          color: 'black'
-        }}>
-          <button
-            style={{ 
-              padding: 8, 
-              borderRadius: 4, 
-              background: showHeatmap ? '#007bff' : 'white', 
-              color: showHeatmap ? 'white' : 'black',
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (!showHeatmap) {
-                e.target.style.background = '#f0f0f0';
-                e.target.style.borderColor = '#999';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              } else {
-                e.target.style.background = '#0056b3';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!showHeatmap) {
-                e.target.style.background = 'white';
-                e.target.style.borderColor = '#ccc';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              } else {
-                e.target.style.background = '#007bff';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }
-            }}
-            onClick={() => setShowHeatmap(!showHeatmap)}
+      {/* Control center below the map: always visible */}
+      <div style={{
+        marginTop: 16,
+        padding: 16,
+        background: '#f8f8f8',
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+        display: 'flex',
+        gap: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+        color: 'black'
+      }}>
+        <button
+          style={{ 
+            padding: 8, 
+            borderRadius: 4, 
+            background: showHeatmap ? '#007bff' : 'white', 
+            color: showHeatmap ? 'white' : 'black',
+            border: '1px solid #ccc', 
+            cursor: 'pointer', 
+            fontWeight: 600,
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (!showHeatmap) {
+              e.target.style.background = '#f0f0f0';
+              e.target.style.borderColor = '#999';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            } else {
+              e.target.style.background = '#0056b3';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!showHeatmap) {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#ccc';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            } else {
+              e.target.style.background = '#007bff';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }
+          }}
+          onClick={() => setShowHeatmap(!showHeatmap)}
+        >
+          {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
+        </button>
+        <label style={{ marginLeft: 24, color: 'black' }}>
+          Data set:
+          <select
+            value={heatmapSource}
+            onChange={e => setHeatmapSource(e.target.value)}
+            style={{ marginLeft: 8, verticalAlign: 'middle' }}
+            disabled={!csvLoaded && !greenScoreLoaded}
           >
-            {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
-          </button>
-          <label style={{ marginLeft: 24, color: 'black' }}>
-            Data set:
-            <select
-              value={heatmapSource}
-              onChange={e => setHeatmapSource(e.target.value)}
-              style={{ marginLeft: 8, verticalAlign: 'middle' }}
-              disabled={!csvLoaded && !greenScoreLoaded}
-            >
-              {csvLoaded && <option value="csv">Traffic Signal (yes/no)</option>}
-              {greenScoreLoaded && <option value="green_score">Green Score (1-10)</option>}
-            </select>
-          </label>
-          {/* Score Range UI */}
-          <div style={{ marginLeft: 24, position: 'relative', display: 'inline-block' }}>
-            <button
-              className="score-range-btn"
-              style={{ 
-                padding: 8, 
-                borderRadius: 4, 
-                background: 'white', 
-                border: '1px solid #ccc', 
-                cursor: 'pointer', 
-                fontWeight: 600,
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#f0f0f0';
-                e.target.style.borderColor = '#999';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'white';
-                e.target.style.borderColor = '#ccc';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-              onClick={() => setScoreRangeDropdownOpen(v => !v)}
-            >
-              Score Range
-            </button>
-            {scoreRangeDropdownOpen && (
-              <div className="score-range-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 16, minWidth: 200, zIndex: 10 }}>
-                {heatmapSource === 'csv' && (
-                  <>
-                    <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                      <input type="checkbox" checked={props.scoreRangeYes} onChange={e => props.setScoreRangeYes(e.target.checked)} /> Yes
-                    </label>
-                    <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
-                      <input type="checkbox" checked={props.scoreRangeNo} onChange={e => props.setScoreRangeNo(e.target.checked)} /> No
-                    </label>
-                  </>
-                )}
-                {heatmapSource === 'green_score' && (
-                  <>
-                    <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                      Min:
-                      <input
-                        type="number"
-                        min={1}
-                        max={props.scoreRangeMax}
-                        value={props.scoreRangeMin}
-                        onChange={e => props.setScoreRangeMin(Number(e.target.value))}
-                        style={{ width: 48, marginLeft: 8 }}
-                      />
-                    </label>
-                    <label style={{ display: 'block', color: 'black' }}>
-                      Max:
-                      <input
-                        type="number"
-                        min={props.scoreRangeMin}
-                        max={10}
-                        value={props.scoreRangeMax}
-                        onChange={e => props.setScoreRangeMax(Number(e.target.value))}
-                        style={{ width: 48, marginLeft: 8 }}
-                      />
-                    </label>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+            {csvLoaded && <option value="csv">Traffic Signal (yes/no)</option>}
+            {greenScoreLoaded && <option value="green_score">Green Score (1-10)</option>}
+          </select>
+        </label>
+        {/* Score Range UI */}
+        <div style={{ marginLeft: 24, position: 'relative', display: 'inline-block' }}>
           <button
-            style={{ 
-              marginLeft: 24, 
-              padding: 8, 
-              borderRadius: 4, 
-              background: 'white', 
-              border: '1px solid #ccc', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              transition: 'all 0.2s ease'
-            }}
+            className="score-range-btn"
+            style={{ padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
+            onClick={() => setScoreRangeDropdownOpen(v => !v)}
             onMouseEnter={(e) => {
               e.target.style.background = '#f0f0f0';
               e.target.style.borderColor = '#999';
@@ -989,25 +946,135 @@ function Map(props) {
               e.target.style.transform = 'translateY(0)';
               e.target.style.boxShadow = 'none';
             }}
-            onClick={resetFilters}
           >
-            Reset Filters
+            Score Range
           </button>
-          <label style={{ marginLeft: 24, color: 'black' }}>
-            Interpolation (Radius):
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={heatmapRadiusLevel}
-              onChange={e => setHeatmapRadiusLevel(Number(e.target.value))}
-              style={{ marginLeft: 8, verticalAlign: 'middle' }}
-            />
-            <span style={{ marginLeft: 8, color: 'black' }}>{10 + (heatmapRadiusLevel - 1) * 10}</span>
-          </label>
-          {/* Add more controls here as needed */}
+          {scoreRangeDropdownOpen && (
+            <div className="score-range-dropdown" style={{ position: 'absolute', top: 40, left: 0, background: 'white', border: '1px solid #ccc', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', padding: 16, minWidth: 200, zIndex: 10 }}>
+              {heatmapSource === 'csv' && (
+                <>
+                  <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
+                    <input type="checkbox" checked={props.scoreRangeYes} onChange={e => props.setScoreRangeYes(e.target.checked)} /> Yes
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 4, color: 'black' }}>
+                    <input type="checkbox" checked={props.scoreRangeNo} onChange={e => props.setScoreRangeNo(e.target.checked)} /> No
+                  </label>
+                </>
+              )}
+              {heatmapSource === 'green_score' && (
+                <>
+                  <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
+                    Min:
+                    <input
+                      type="number"
+                      min={1}
+                      max={props.scoreRangeMax}
+                      value={props.scoreRangeMin}
+                      onChange={e => props.setScoreRangeMin(Number(e.target.value))}
+                      style={{ width: 48, marginLeft: 8 }}
+                    />
+                  </label>
+                  <label style={{ display: 'block', color: 'black' }}>
+                    Max:
+                    <input
+                      type="number"
+                      min={props.scoreRangeMin}
+                      max={10}
+                      value={props.scoreRangeMax}
+                      onChange={e => props.setScoreRangeMax(Number(e.target.value))}
+                      style={{ width: 48, marginLeft: 8 }}
+                    />
+                  </label>
+                </>
+              )}
+            </div>
+          )}
         </div>
-      )}
+        {/* Export CSV Button */}
+        <button
+          style={{ marginLeft: 24, padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#f0f0f0';
+            e.target.style.borderColor = '#999';
+            e.target.style.transform = 'translateY(-1px)';
+            e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'white';
+            e.target.style.borderColor = '#ccc';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = 'none';
+          }}
+          onClick={() => {
+            let data = [];
+            let filename = '';
+            if (heatmapSource === 'csv') {
+              data = csvData.filter(row => {
+                const score = (row.scores || '').toLowerCase();
+                return (score === 'yes' && props.scoreRangeYes) || (score === 'no' && props.scoreRangeNo);
+              });
+              filename = 'traffic-signal';
+            } else if (heatmapSource === 'green_score') {
+              data = greenScoreData.filter(row => {
+                const score = parseFloat(row.score);
+                return score >= props.scoreRangeMin && score <= props.scoreRangeMax;
+              });
+              filename = 'green-score';
+            }
+            if (data.length === 0) return;
+            const headers = Object.keys(data[0] || {});
+            const csvContent = [
+              headers.join(','),
+              ...data.map(row => headers.map(header => {
+                const value = row[header];
+                return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+              }).join(','))
+            ];
+            const csvString = csvContent.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Export CSV
+        </button>
+        <button
+          style={{ marginLeft: 24, padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#f0f0f0';
+            e.target.style.borderColor = '#999';
+            e.target.style.transform = 'translateY(-1px)';
+            e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = 'white';
+            e.target.style.borderColor = '#ccc';
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = 'none';
+          }}
+          onClick={resetFilters}
+        >
+          Reset Filters
+        </button>
+        <label style={{ marginLeft: 24, color: 'black' }}>
+          Interpolation (Radius):
+          <input
+            type="range"
+            min={1}
+            max={10}
+            value={heatmapRadiusLevel}
+            onChange={e => setHeatmapRadiusLevel(Number(e.target.value))}
+            style={{ marginLeft: 8, verticalAlign: 'middle' }}
+          />
+          <span style={{ marginLeft: 8, color: 'black' }}>{10 + (heatmapRadiusLevel - 1) * 10}</span>
+        </label>
+      </div>
     </div>
   );
 }
