@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { PieChart, Pie, Cell, Legend } from 'recharts';
 import { useRef } from 'react';
 
-function StatisticsPanel({ dataSet, csvData, greenScoreData }) {
-  if (!dataSet) return null;
+function StatisticsPanel({ dataSet, csvData, greenScoreData, statsDataSet, setStatsDataSet, setShowStats }) {
+  if (!statsDataSet) return null;
 
   const calculateStats = () => {
-    if (dataSet === 'csv' && csvData.length > 0) {
+    if (statsDataSet === 'csv' && csvData.length > 0) {
       const yesCount = csvData.filter(row => (row.scores || '').toLowerCase() === 'yes').length;
       const noCount = csvData.filter(row => (row.scores || '').toLowerCase() === 'no').length;
       const total = csvData.length;
@@ -23,7 +23,7 @@ function StatisticsPanel({ dataSet, csvData, greenScoreData }) {
         noPercentage,
         dataType: 'Categorical (Yes/No)'
       };
-    } else if (dataSet === 'green_score' && greenScoreData.length > 0) {
+    } else if (statsDataSet === 'green_score' && greenScoreData.length > 0) {
       const scores = greenScoreData.map(row => parseFloat(row.score)).filter(score => !isNaN(score));
       const total = scores.length;
       const mean = (scores.reduce((sum, score) => sum + score, 0) / total).toFixed(2);
@@ -54,63 +54,130 @@ function StatisticsPanel({ dataSet, csvData, greenScoreData }) {
 
   return (
     <div style={{
-      background: 'rgba(255, 255, 255, 0.95)',
-      padding: 16,
+      background: '#ffffff',
+      padding: 20,
       borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-      marginTop: 16
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      marginTop: 16,
+      border: '1px solid #ecf0f1'
     }}>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 600, color: '#333' }}>
-        Descriptive Statistics - {dataSet === 'csv' ? 'Traffic Signal Data' : 'Green Score Data'}
-      </h3>
-      <div style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16
+      }}>
+        <h3 style={{ 
+          margin: 0, 
+          fontSize: 18, 
+          fontWeight: 600, 
+          color: '#2c3e50',
+          borderBottom: '2px solid #3498db',
+          paddingBottom: 8
+        }}>
+          Descriptive Statistics 
+        </h3>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#2c3e50' }}>Analysis Dataset:</span>
+          <select 
+            value={statsDataSet} 
+            onChange={e => setStatsDataSet(e.target.value)}
+            style={{ 
+              padding: '6px 12px', 
+              borderRadius: 4, 
+              border: '1px solid #bdc3c7',
+              background: 'white',
+              fontSize: '14px'
+            }}
+          >
+            <option value="csv">Traffic Signal Data</option>
+            <option value="green_score">Green Score Data</option>
+          </select>
+          <button
+            style={{
+              padding: '6px 12px',
+              borderRadius: 4,
+              background: '#95a5a6',
+              color: 'white',
+              border: 'none',
+              fontSize: '12px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#7f8c8d';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = '#95a5a6';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+            onClick={() => setShowStats(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      <div style={{ 
+        fontSize: 13, 
+        color: '#7f8c8d', 
+        marginBottom: 16,
+        fontStyle: 'italic'
+      }}>
         Data Type: {stats.dataType}
       </div>
       
-      {dataSet === 'csv' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Total Points</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#007bff' }}>{stats.total}</div>
+      {statsDataSet === 'csv' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Total Observations</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#007bff' }}>{stats.total}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Yes Responses</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#28a745' }}>{stats.yesCount} ({stats.yesPercentage}%)</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Positive Responses</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#28a745' }}>{stats.yesCount} ({stats.yesPercentage}%)</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>No Responses</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#dc3545' }}>{stats.noCount} ({stats.noPercentage}%)</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Negative Responses</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#dc3545' }}>{stats.noCount} ({stats.noPercentage}%)</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Response Rate</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#6c757d' }}>100%</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Response Rate</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#6c757d' }}>100%</div>
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Total Points</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#007bff' }}>{stats.total}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Total Observations</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#007bff' }}>{stats.total}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Mean Score</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#28a745' }}>{stats.mean}</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Mean Score</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#28a745' }}>{stats.mean}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Median Score</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#ffc107' }}>{stats.median}</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Median Score</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#ffc107' }}>{stats.median}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Std Deviation</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#6c757d' }}>{stats.stdDev}</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Standard Deviation</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#6c757d' }}>{stats.stdDev}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Min Score</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#dc3545' }}>{stats.min}</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Minimum Score</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#dc3545' }}>{stats.min}</div>
           </div>
-          <div style={{ padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
-            <div style={{ fontWeight: 600, color: '#333' }}>Max Score</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#28a745' }}>{stats.max}</div>
+          <div style={{ padding: 12, background: '#f8f9fa', borderRadius: 6, border: '1px solid #e9ecef' }}>
+            <div style={{ fontWeight: 600, color: '#495057', fontSize: '13px', marginBottom: 4 }}>Maximum Score</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#28a745' }}>{stats.max}</div>
           </div>
         </div>
       )}
@@ -357,6 +424,12 @@ function App() {
   const [scoreRangeMax, setScoreRangeMax] = useState(10);
   const [scoreRangeYes, setScoreRangeYes] = useState(true);
   const [scoreRangeNo, setScoreRangeNo] = useState(true);
+  
+  // Control bar visibility state
+  const [controlBarOpen, setControlBarOpen] = useState(false);
+  
+  // Tooltip state
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Filter greenScoreData for chart
   const filteredGreenScoreData = greenScoreData.filter(row => {
@@ -372,7 +445,79 @@ function App() {
 
   return (
     <div className="App">
-      <h1 style={{ color: 'white', textAlign: 'center' }}>Urban Health Liveability Visualization</h1>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '0 16px',
+        marginBottom: 10
+      }}>
+        <div style={{ width: 40, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minHeight: '40px' }}>
+          {!controlBarOpen && (
+            <div style={{ position: 'relative' }}>
+              <button
+                style={{ 
+                  padding: 8, 
+                  borderRadius: 4, 
+                  background: 'rgba(255, 255, 255, 0.9)', 
+                  border: '1px solid #ccc', 
+                  cursor: 'pointer', 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 1)';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                  setShowTooltip(true);
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.9)';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.07)';
+                  setShowTooltip(false);
+                }}
+                onClick={() => setControlBarOpen(true)}
+              >
+                <img 
+                  src={process.env.PUBLIC_URL + '/menu_icon.png'} 
+                  alt="Menu" 
+                  style={{ width: 24, height: 24 }}
+                />
+              </button>
+              {showTooltip && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginTop: 4,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
+                  zIndex: 1000,
+                  pointerEvents: 'none'
+                }}>
+                  Map Controls
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <h1 style={{ 
+          color: '#2c3e50', 
+          textAlign: 'center', 
+          margin: 0, 
+          flex: 1,
+          fontSize: '28px',
+          fontWeight: 300,
+          letterSpacing: '0.5px'
+        }}>Urban Health & Liveability Research Platform</h1>
+        <div style={{ width: 40 }}></div>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', width: '100%', gap: 32, marginTop: 10 }}>
         <div style={{ flex: 3, minWidth: 0 }}>
           <Map
@@ -386,6 +531,8 @@ function App() {
             setScoreRangeYes={setScoreRangeYes}
             scoreRangeNo={scoreRangeNo}
             setScoreRangeNo={setScoreRangeNo}
+            controlBarOpen={controlBarOpen}
+            setControlBarOpen={setControlBarOpen}
           />
         </div>
         <div style={{ flex: 2, minWidth: 320 }}>
@@ -397,121 +544,221 @@ function App() {
           }}>
             <button
               style={{ 
-                padding: 8, 
-                borderRadius: 4, 
-                background: 'white', 
-                border: '1px solid #ccc', 
+                padding: '10px 16px', 
+                borderRadius: 6, 
+                background: '#34495e', 
+                color: 'white',
+                border: 'none', 
                 cursor: 'pointer', 
-                fontWeight: 600,
-                transition: 'all 0.2s ease'
+                fontWeight: 500,
+                fontSize: '14px',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = '#f0f0f0';
-                e.target.style.borderColor = '#999';
+                e.target.style.background = '#2c3e50';
                 e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = 'white';
-                e.target.style.borderColor = '#ccc';
+                e.target.style.background = '#34495e';
                 e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
+                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
               }}
               onClick={() => setShowChart(v => !v)}
             >
-              {showChart ? 'Hide Chart' : 'Create Chart'}
+              {showChart ? 'Hide Graph' : 'Generate Graph'}
             </button>
             {!showStats ? (
               <button
                 style={{ 
-                  padding: 8, 
-                  borderRadius: 4, 
-                  background: 'white', 
-                  border: '1px solid #ccc', 
+                  padding: '10px 16px', 
+                  borderRadius: 6, 
+                  background: '#27ae60', 
+                  color: 'white',
+                  border: 'none', 
                   cursor: 'pointer', 
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease'
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.background = '#f0f0f0';
-                  e.target.style.borderColor = '#999';
+                  e.target.style.background = '#229954';
                   e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.background = 'white';
-                  e.target.style.borderColor = '#ccc';
+                  e.target.style.background = '#27ae60';
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                 }}
                 onClick={() => setShowStats(true)}
               >
-                Show Stats
+                Statistical Analysis
               </button>
             ) : null}
-            <button
-              style={{ 
-                padding: 8, 
-                borderRadius: 4, 
-                background: 'white', 
-                border: '1px solid #ccc', 
-                cursor: 'pointer', 
-                fontWeight: 600,
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#f0f0f0';
-                e.target.style.borderColor = '#999';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'white';
-                e.target.style.borderColor = '#ccc';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-              onClick={() => {
-                const data = dataSet === 'csv' ? filteredCsvData : filteredGreenScoreData;
-                const headers = Object.keys(data[0] || {});
-                const csvContent = [
-                  headers.join(','),
-                  ...data.map(row => headers.map(header => {
-                    const value = row[header];
-                    return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
-                  }).join(','))
-                ];
-                const csvString = csvContent.join('\n');
-                const blob = new Blob([csvString], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${dataSet}-${chartType}-${new Date().toISOString().slice(0, 10)}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Export CSV
-            </button>
+            {(showChart || showStats) && (
+              <button
+                style={{ 
+                  padding: '10px 16px', 
+                  borderRadius: 6, 
+                  background: '#8e44ad', 
+                  color: 'white',
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#7d3c98';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#8e44ad';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
+                onClick={() => {
+                  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                  const snapshotData = {
+                    timestamp: timestamp,
+                    analysis: {
+                      dataset: dataSet,
+                      visualizationType: showChart ? chartType : 'None',
+                      statisticalAnalysis: showStats ? statsDataSet : 'None',
+                      filters: {
+                        scoreRangeMin: scoreRangeMin,
+                        scoreRangeMax: scoreRangeMax,
+                        scoreRangeYes: scoreRangeYes,
+                        scoreRangeNo: scoreRangeNo
+                      }
+                    },
+                    statistics: showStats ? {
+                      dataset: statsDataSet,
+                      data: statsDataSet === 'csv' ? filteredCsvData : filteredGreenScoreData,
+                      summary: statsDataSet === 'csv' ? {
+                        total: filteredCsvData.length,
+                        yesCount: filteredCsvData.filter(row => (row.scores || '').toLowerCase() === 'yes').length,
+                        noCount: filteredCsvData.filter(row => (row.scores || '').toLowerCase() === 'no').length
+                      } : {
+                        total: filteredGreenScoreData.length,
+                        scores: filteredGreenScoreData.map(row => parseFloat(row.score)).filter(score => !isNaN(score)),
+                        mean: (filteredGreenScoreData.map(row => parseFloat(row.score)).filter(score => !isNaN(score)).reduce((sum, score) => sum + score, 0) / filteredGreenScoreData.length).toFixed(2),
+                        min: Math.min(...filteredGreenScoreData.map(row => parseFloat(row.score)).filter(score => !isNaN(score))),
+                        max: Math.max(...filteredGreenScoreData.map(row => parseFloat(row.score)).filter(score => !isNaN(score)))
+                      }
+                    } : null,
+                    visualization: showChart ? {
+                      type: chartType,
+                      dataset: dataSet,
+                      data: dataSet === 'csv' ? filteredCsvData : filteredGreenScoreData
+                    } : null
+                  };
+                  
+                  const jsonString = JSON.stringify(snapshotData, null, 2);
+                  const blob = new Blob([jsonString], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `research-snapshot-${timestamp.replace(/[: ]/g, '-')}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download Dataset
+              </button>
+            )}
+            {showChart && (
+              <button
+                style={{ 
+                  padding: '10px 16px', 
+                  borderRadius: 6, 
+                  background: '#e67e22', 
+                  color: 'white',
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = '#d35400';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = '#e67e22';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
+                onClick={() => {
+                  // Find the chart container
+                  const chartContainer = document.querySelector('.recharts-wrapper');
+                  if (chartContainer) {
+                    // Use html2canvas to capture the chart
+                    import('html2canvas').then(html2canvas => {
+                      html2canvas.default(chartContainer, {
+                        backgroundColor: '#ffffff',
+                        scale: 2, // Higher resolution
+                        useCORS: true,
+                        allowTaint: true
+                      }).then(canvas => {
+                        const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                        const link = document.createElement('a');
+                        link.download = `chart-${dataSet}-${chartType}-${timestamp.replace(/[: ]/g, '-')}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                      });
+                    }).catch(err => {
+                      console.error('Failed to load html2canvas:', err);
+                      alert('Chart export failed. Please try again.');
+                    });
+                  } else {
+                    alert('No chart found to export.');
+                  }
+                }}
+              >
+                Download Graph
+              </button>
+            )}
           </div>
           {showChart && (
             <>
-              <label style={{ color: 'white', marginRight: 8 }}>
-                Data set:
-                <select value={dataSet} onChange={e => setDataSet(e.target.value)} style={{ marginLeft: 8 }}>
-                  <option value="csv">Traffic Signal</option>
-                  <option value="green_score">Green Score</option>
+              <label style={{ color: '#2c3e50', marginRight: 16, fontSize: '14px', fontWeight: 500 }}>
+                Dataset:
+                <select value={dataSet} onChange={e => setDataSet(e.target.value)} style={{ 
+                  marginLeft: 8, 
+                  padding: '6px 12px',
+                  borderRadius: 4,
+                  border: '1px solid #bdc3c7',
+                  background: 'white',
+                  fontSize: '14px'
+                }}>
+                  <option value="csv">Traffic Signal Data</option>
+                  <option value="green_score">Green Score Data</option>
                 </select>
               </label>
-              <label style={{ color: 'white', marginRight: 8 }}>
-                Chart type:
-                <select value={chartType} onChange={e => setChartType(e.target.value)} style={{ marginLeft: 8 }}>
-                  <option value="bar">Bar</option>
-                  <option value="pie">Pie</option>
-                  <option value="line">Line</option>
-                  <option value="scatter">Scatter</option>
+              <label style={{ color: '#2c3e50', marginRight: 8, fontSize: '14px', fontWeight: 500 }}>
+                Visualization Type:
+                <select value={chartType} onChange={e => setChartType(e.target.value)} style={{ 
+                  marginLeft: 8, 
+                  padding: '6px 12px',
+                  borderRadius: 4,
+                  border: '1px solid #bdc3c7',
+                  background: 'white',
+                  fontSize: '14px'
+                }}>
+                  <option value="bar">Bar Chart</option>
+                  <option value="pie">Pie Chart</option>
+                  <option value="line">Line Chart</option>
+                  <option value="scatter">Scatter Plot</option>
                   <option value="histogram">Histogram</option>
                 </select>
               </label>
@@ -520,55 +767,7 @@ function App() {
           {showChart && <Chart chartType={chartType} dataSet={dataSet} csvData={filteredCsvData} greenScoreData={filteredGreenScoreData} />}
           {!showStats ? null : (
             <>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 16, 
-                background: 'rgba(255, 255, 255, 0.9)', 
-                padding: 8, 
-                borderRadius: 8, 
-                marginTop: 16, 
-                width: 'fit-content', 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.07)' 
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 600 }}>Statistics Data Set:</span>
-                <select 
-                  value={statsDataSet} 
-                  onChange={e => setStatsDataSet(e.target.value)}
-                  style={{ padding: 4, borderRadius: 4, border: '1px solid #ccc' }}
-                >
-                  <option value="csv">Traffic Signal</option>
-                  <option value="green_score">Green Score</option>
-                </select>
-                <button
-                  style={{ 
-                    padding: '4px 8px', 
-                    borderRadius: 4, 
-                    background: 'white', 
-                    border: '1px solid #ccc', 
-                    cursor: 'pointer', 
-                    fontWeight: 600,
-                    fontSize: 12,
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.background = '#f0f0f0';
-                    e.target.style.borderColor = '#999';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.background = 'white';
-                    e.target.style.borderColor = '#ccc';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                  onClick={() => setShowStats(false)}
-                >
-                  Hide
-                </button>
-              </div>
-              <StatisticsPanel dataSet={statsDataSet} csvData={filteredCsvData} greenScoreData={filteredGreenScoreData} />
+              <StatisticsPanel dataSet={dataSet} csvData={filteredCsvData} greenScoreData={filteredGreenScoreData} statsDataSet={statsDataSet} setStatsDataSet={setStatsDataSet} setShowStats={setShowStats} />
             </>
           )}
         </div>
