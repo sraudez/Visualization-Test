@@ -1,13 +1,10 @@
 {
   "files": {
-    "main.js": "/Visualization-Test/static/js/main.7ea92492.js",
-    "static/media/sample.csv": "/Visualization-Test/static/media/sample.3b4d794ea0e5e74e46bc.csv",
-    "static/media/green_score.csv": "/Visualization-Test/static/media/green_score.4e9b5f1fbf4787b6cf7c.csv",
-    "static/media/stl_test.csv": "/Visualization-Test/static/media/stl_test.c431668685a794956892.csv",
+    "main.js": "/Visualization-Test/static/js/main.c64143ec.js",
     "index.html": "/Visualization-Test/index.html",
-    "main.7ea92492.js.map": "/Visualization-Test/static/js/main.7ea92492.js.map"
+    "main.c64143ec.js.map": "/Visualization-Test/static/js/main.c64143ec.js.map"
   },
   "entrypoints": [
-    "static/js/main.7ea92492.js"
+    "static/js/main.c64143ec.js"
   ]
 }
