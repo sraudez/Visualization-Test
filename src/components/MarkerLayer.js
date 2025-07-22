@@ -23,10 +23,21 @@ export function MarkerLayer({
   showHeatmap,
   hideMarkersWithHeatmap
 }) {
+  console.log(`MarkerLayer for ${datasetName}:`, { 
+    csvDataLength: csvData?.length, 
+    firstRow: csvData?.[0],
+    datasetName,
+    showHeatmap,
+    hideMarkersWithHeatmap
+  });
+
   // Detect CSV format
   const csvFormat = detectCSVFormat(csvData);
   
+  console.log(`CSV format for ${datasetName}:`, csvFormat);
+  
   if (!csvFormat) {
+    console.log(`No valid CSV format for ${datasetName}`);
     return null; // Invalid CSV format
   }
   
@@ -35,8 +46,12 @@ export function MarkerLayer({
   // Get score range for this specific dataset
   const scoreRange = getDatasetScoreRange ? getDatasetScoreRange(datasetName) : { yes: true, no: true, min: 1, max: 10 };
   
+  console.log(`Score range for ${datasetName}:`, scoreRange);
+  
   // Check if markers should be hidden (when heatmap is active and hide option is enabled)
   const shouldHideMarkers = showHeatmap && hideMarkersWithHeatmap;
+  
+  console.log(`Should hide markers for ${datasetName}:`, shouldHideMarkers);
   
   // Filter data based on score format and range
   const filteredData = csvData.filter(row => {
@@ -63,8 +78,15 @@ export function MarkerLayer({
     return true; // For unknown formats, show all
   });
   
+  console.log(`Filtered data for ${datasetName}:`, { 
+    originalLength: csvData.length, 
+    filteredLength: filteredData.length,
+    firstFilteredRow: filteredData[0]
+  });
+  
   // Don't render markers if they should be hidden
   if (shouldHideMarkers) {
+    console.log(`Markers hidden for ${datasetName} due to heatmap`);
     return null;
   }
   

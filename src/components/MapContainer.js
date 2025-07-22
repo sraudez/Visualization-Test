@@ -1,12 +1,14 @@
 // src/components/MapContainer.js
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, LoadScript } from '@react-google-maps/api';
-import { containerStyle, center, mapStyles, initialCenter, initialZoom, parseCSV, detectCSVFormat } from '../utils';
+import { containerStyle, center, initialCenter, initialZoom } from '../utils/mapConfig';
+import { mapStyles } from '../utils/mapStyles';
+import { parseCSV, detectCSVFormat } from '../utils';
 import { useMeasurement } from '../hooks';
-import { MeasurementDisplay } from '../components';
-import { GeoJsonLoader } from './GeoJsonLoader';
 import { MarkerLayer } from './MarkerLayer';
 import { HeatmapLayerWrapper } from './HeatmapLayerWrapper';
+import { GeoJsonLoader } from './GeoJsonLoader';
+import { MeasurementDisplay } from './MeasurementDisplay';
 import { LayerControls, BottomControls } from './LayerControls';
 
 function MapContainer(props) {
@@ -39,6 +41,12 @@ function MapContainer(props) {
     updateDatasetScoreRange, 
     getDatasetScoreRange 
   } = props;
+
+  console.log('MapContainer - datasetData:', { 
+    datasetDataKeys: Object.keys(datasetData || {}),
+    datasetDataLength: Object.keys(datasetData || {}).length,
+    datasetData: datasetData
+  });
 
   // Handle dynamic CSV data from props
   const handleCSVDataUpdate = useCallback(() => {
@@ -144,6 +152,8 @@ function MapContainer(props) {
         getHeatmapDatasets={props.getHeatmapDatasets}
         hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
         setHideMarkersWithHeatmap={props.setHideMarkersWithHeatmap}
+        selectedChartTypes={props.selectedChartTypes}
+        currentStatsData={props.currentStatsData}
       />
 
       <LoadScript googleMapsApiKey="AIzaSyCp6YMW24ocLyfToDWWFs_FmUuN7AwVm4c" libraries={["visualization"]}>
@@ -155,23 +165,31 @@ function MapContainer(props) {
           onLoad={handleMapLoad}
           onClick={handleMapClickWrapper}
         >
-          {/* Render separate MarkerLayer for each dataset */}
-          {props.datasetData && Object.entries(props.datasetData).map(([datasetName, datasetRows]) => (
-            <MarkerLayer
-              key={datasetName}
-              csvData={datasetRows}
-              measurementMode={measurementMode}
-              selectedMarker={selectedMarker}
-              setSelectedMarker={setSelectedMarker}
-              mapRef={mapRef}
-              zoom={zoom}
-              datasetName={datasetName}
-              datasetScoreRanges={props.datasetScoreRanges}
-              getDatasetScoreRange={props.getDatasetScoreRange}
-              showHeatmap={showHeatmap}
-              hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
-            />
-          ))}
+          {/* Render separate MarkerLayer for each SELECTED dataset */}
+          {props.datasetData && props.selectedDatasets.map(datasetName => {
+            const datasetRows = props.datasetData[datasetName];
+            console.log(`Rendering MarkerLayer for ${datasetName}:`, { 
+              datasetRowsLength: datasetRows?.length,
+              firstRow: datasetRows?.[0]
+            });
+            
+            return (
+              <MarkerLayer
+                key={datasetName}
+                csvData={datasetRows}
+                measurementMode={measurementMode}
+                selectedMarker={selectedMarker}
+                setSelectedMarker={setSelectedMarker}
+                mapRef={mapRef}
+                zoom={zoom}
+                datasetName={datasetName}
+                datasetScoreRanges={props.datasetScoreRanges}
+                getDatasetScoreRange={props.getDatasetScoreRange}
+                showHeatmap={showHeatmap}
+                hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
+              />
+            );
+          })}
           
           <HeatmapLayerWrapper
             showHeatmap={showHeatmap}
@@ -217,6 +235,8 @@ function MapContainer(props) {
         getHeatmapDatasets={props.getHeatmapDatasets}
         hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
         setHideMarkersWithHeatmap={props.setHideMarkersWithHeatmap}
+        selectedChartTypes={props.selectedChartTypes}
+        currentStatsData={props.currentStatsData}
       />
     </div>
   );

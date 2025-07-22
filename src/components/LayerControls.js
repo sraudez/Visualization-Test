@@ -1,7 +1,9 @@
 // src/components/LayerControls.js
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Draggable from 'react-draggable';
 import { detectCSVFormat } from '../utils';
+import { ExportDropdown } from './ExportDropdown';
+
 
 export function LayerControls({
   controlBarOpen,
@@ -42,7 +44,17 @@ export function LayerControls({
   selectedDatasets,
   setSelectedDatasets,
   csvFiles,
-  datasetData
+  datasetData,
+  datasetScoreRanges,
+  updateDatasetScoreRange,
+  getDatasetScoreRange,
+  selectedHeatmapDatasets,
+  updateHeatmapDatasetSelection,
+  getHeatmapDatasets,
+  hideMarkersWithHeatmap,
+  setHideMarkersWithHeatmap,
+  selectedChartTypes,
+  currentStatsData
 }) {
   const [datasetDropdownOpen, setDatasetDropdownOpen] = useState(false);
 
@@ -513,15 +525,6 @@ export function BottomControls({
   showHeatmap,
   setShowHeatmap,
   csvLoaded,
-  // Remove global score range props
-  // scoreRangeYes,
-  // setScoreRangeYes,
-  // scoreRangeNo,
-  // setScoreRangeNo,
-  // scoreRangeMin,
-  // setScoreRangeMin,
-  // scoreRangeMax,
-  // setScoreRangeMax,
   heatmapRadiusLevel,
   setHeatmapRadiusLevel,
   scoreRangeDropdownOpen,
@@ -530,22 +533,21 @@ export function BottomControls({
   resetFilters,
   datasetData,
   selectedDatasets,
-  // Add per-dataset score range props
   datasetScoreRanges,
   updateDatasetScoreRange,
   getDatasetScoreRange,
-  // Add heatmap dataset selection props
   selectedHeatmapDatasets,
   updateHeatmapDatasetSelection,
   getHeatmapDatasets,
-  // Add hide markers with heatmap prop
   hideMarkersWithHeatmap,
-  setHideMarkersWithHeatmap
+  setHideMarkersWithHeatmap,
+  selectedChartTypes,
+  updateChartTypeSelection,
+  getChartTypes,
+  currentStatsData
 }) {
-  // Add state for heatmap dropdown visibility
   const [heatmapDropdownOpen, setHeatmapDropdownOpen] = useState(false);
   
-  // Close heatmap dropdown on outside click
   useEffect(() => {
     function handleClick(e) {
       if (!e.target.closest('.heatmap-dropdown') && !e.target.closest('.heatmap-btn')) {
@@ -561,21 +563,6 @@ export function BottomControls({
       document.removeEventListener('mousedown', handleClick);
     };
   }, [heatmapDropdownOpen]);
-  
-  // Remove unused currentFormat variable
-  // const detectCurrentFormat = () => {
-  //   if (!datasetData || selectedDatasets.length === 0) return null;
-  //   
-  //   // Check the first selected dataset
-  //   const firstDataset = selectedDatasets[0];
-  //   const data = datasetData[firstDataset];
-  //   
-  //   if (!data || data.length === 0) return null;
-  //   
-  //   return detectCSVFormat(data);
-  // };
-  // 
-  // const currentFormat = detectCurrentFormat();
   
   return (
     <div style={{
@@ -624,15 +611,14 @@ export function BottomControls({
             e.target.style.background = '#007bff';
             e.target.style.transform = 'translateY(0)';
             e.target.style.boxShadow = 'none';
-            }
-          }}
+          }
+        }}
         onClick={() => setShowHeatmap(!showHeatmap)}
         disabled={!csvLoaded}
       >
         {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
       </button>
 
-      {/* Hide Markers with Heatmap Checkbox */}
       <label style={{ display: 'flex', alignItems: 'center', color: 'black', fontSize: 12 }}>
         <input
           type="checkbox"
@@ -643,7 +629,6 @@ export function BottomControls({
         Hide Markers when Heatmap is Active
       </label>
 
-      {/* Heatmap Dataset Selection Dropdown - Only show when multiple datasets are selected */}
       {showHeatmap && selectedDatasets.length > 1 && (
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <button
@@ -676,9 +661,9 @@ export function BottomControls({
           </button>
           {heatmapDropdownOpen && (
             <div className="heatmap-dropdown" style={{ 
-              position: 'absolute', 
+              position: 'absolute',
               top: 40, 
-              left: 0, 
+              left: 0,
               background: 'white', 
               border: '1px solid #ccc', 
               borderRadius: 6, 
@@ -706,7 +691,6 @@ export function BottomControls({
         </div>
       )}
 
-      {/* Score Range UI - Updated for per-dataset controls */}
       <div style={{ marginLeft: 24, position: 'relative', display: 'inline-block' }}>
         <button
           className="score-range-btn"
@@ -785,9 +769,7 @@ export function BottomControls({
                       )}
                     </div>
                     
-                    {/* Conditional controls based on format */}
                     {format && format.scoreFormat === 'yes_no' ? (
-                      /* Yes/No controls for yes/no datasets */
                       <div style={{ marginBottom: 8 }}>
                         <label style={{ display: 'inline-block', marginRight: 12, color: 'black', fontSize: 12 }}>
                           <input 
@@ -807,7 +789,6 @@ export function BottomControls({
                         </label>
                       </div>
                     ) : format && format.scoreFormat === 'numeric_1_10' ? (
-                      /* Numeric controls for 1-10 datasets */
                       <div style={{ fontSize: 12, color: 'black' }}>
                         <label style={{ display: 'inline-block', marginRight: 8 }}>
                           Min:
@@ -833,7 +814,6 @@ export function BottomControls({
                         </label>
                       </div>
                     ) : (
-                      /* Show both controls for unknown formats or mixed data */
                       <>
                         <div style={{ marginBottom: 8 }}>
                           <label style={{ display: 'inline-block', marginRight: 12, color: 'black', fontSize: 12 }}>
@@ -885,7 +865,6 @@ export function BottomControls({
               })
             )}
             
-            {/* Debug info */}
             <div style={{ marginTop: 12, fontSize: 10, color: '#999', borderTop: '1px solid #ddd', paddingTop: 8 }}>
               Debug: {selectedDatasets.length} datasets selected
             </div>
@@ -893,26 +872,15 @@ export function BottomControls({
         )}
       </div>
 
-      {/* Export CSV Button */}
-      <button
-        style={{ marginLeft: 24, padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
-        onMouseEnter={(e) => {
-          e.target.style.background = '#f0f0f0';
-          e.target.style.borderColor = '#999';
-          e.target.style.transform = 'translateY(-1px)';
-          e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'white';
-          e.target.style.borderColor = '#ccc';
-          e.target.style.transform = 'translateY(0)';
-          e.target.style.boxShadow = 'none';
-        }}
-        onClick={handleExportCSV}
-        disabled={!csvLoaded}
-      >
-        Export CSV
-      </button>
+      <ExportDropdown
+        selectedDatasets={selectedDatasets}
+        datasetData={datasetData}
+        datasetScoreRanges={datasetScoreRanges}
+        selectedChartTypes={selectedChartTypes}
+        currentStatsData={currentStatsData}
+      />
+
+
 
       <button
         style={{ marginLeft: 24, padding: 8, borderRadius: 4, background: 'white', border: '1px solid #ccc', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s ease' }}
@@ -947,4 +915,6 @@ export function BottomControls({
       </label>
     </div>
   );
-} 
+}
+
+ 

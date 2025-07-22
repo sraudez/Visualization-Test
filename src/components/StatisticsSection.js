@@ -1,7 +1,7 @@
 import React from 'react';
 import { getChartData, getNumericDataForStats } from '../utils/chartDataUtils';
 
-export function StatisticsSection({ currentStatsData, selectedStatsDataset, setSelectedStatsDataset, csvFiles }) {
+export function StatisticsSection({ currentStatsData, selectedStatsDataset, setSelectedStatsDataset, csvFiles, datasetScoreRanges, datasetData }) {
   const chartData = getChartData(currentStatsData);
   const numericData = getNumericDataForStats(currentStatsData);
 
@@ -24,10 +24,66 @@ export function StatisticsSection({ currentStatsData, selectedStatsDataset, setS
     return numericData.length > 0 ? Math.min(...numericData.map(item => item.score)) : 'N/A';
   };
 
+  // Check if any filters are active
+  const hasActiveFilters = () => {
+    if (!datasetScoreRanges || Object.keys(datasetScoreRanges).length === 0) return false;
+    
+    if (selectedStatsDataset) {
+      // Single dataset selected
+      const range = datasetScoreRanges[selectedStatsDataset];
+      if (!range) return false;
+      return !range.yes || !range.no || range.min > 1 || range.max < 10;
+    } else {
+      // All datasets - check if any dataset has filters
+      return Object.values(datasetScoreRanges).some(range => {
+        return !range.yes || !range.no || range.min > 1 || range.max < 10;
+      });
+    }
+  };
+
+  const getFilterStatus = () => {
+    if (selectedStatsDataset && datasetScoreRanges[selectedStatsDataset]) {
+      // Single dataset selected
+      const range = datasetScoreRanges[selectedStatsDataset];
+      const filters = [];
+      
+      if (!range.yes) filters.push('No "Yes" values');
+      if (!range.no) filters.push('No "No" values');
+      if (range.min > 1) filters.push(`Min: ${range.min}`);
+      if (range.max < 10) filters.push(`Max: ${range.max}`);
+      
+      return filters.length > 0 ? filters.join(', ') : null;
+    } else {
+      // All datasets - show general filter status
+      const activeDatasets = Object.entries(datasetScoreRanges).filter(([dataset, range]) => {
+        return !range.yes || !range.no || range.min > 1 || range.max < 10;
+      });
+      
+      if (activeDatasets.length > 0) {
+        return `${activeDatasets.length} dataset(s) have active filters`;
+      }
+      return null;
+    }
+  };
+
   return (
     <div style={{ marginTop: 20, padding: 20, backgroundColor: '#f8f9fa', borderRadius: '10px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ color: '#333', margin: 0 }}>Data Visualization & Statistics</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ color: '#333', margin: 0 }}>Data Visualization & Statistics</h2>
+          {hasActiveFilters() && (
+            <span style={{ 
+              backgroundColor: '#ffc107', 
+              color: '#333', 
+              padding: '4px 8px', 
+              borderRadius: '4px', 
+              fontSize: '12px', 
+              fontWeight: 'bold' 
+            }}>
+              🔍 Filtered
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <label style={{ color: '#555', fontWeight: 600, fontSize: '14px' }}>Dataset:</label>
           <select
@@ -51,6 +107,20 @@ export function StatisticsSection({ currentStatsData, selectedStatsDataset, setS
           </select>
         </div>
       </div>
+
+      {hasActiveFilters() && getFilterStatus() && (
+        <div style={{ 
+          backgroundColor: '#fff3cd', 
+          border: '1px solid #ffeaa7', 
+          borderRadius: '4px', 
+          padding: '8px 12px', 
+          marginBottom: '15px',
+          fontSize: '14px',
+          color: '#856404'
+        }}>
+          <strong>Active Filters:</strong> {getFilterStatus()}
+        </div>
+      )}
 
       <div>
         <h3 style={{ color: '#555', marginBottom: 15 }}>Statistics</h3>

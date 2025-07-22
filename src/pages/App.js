@@ -44,7 +44,7 @@ function App() {
     currentStatsData,
     selectedChartTypes,
     updateSelectedChartTypes
-  } = useStatsManagement(datasetData, csvFiles);
+  } = useStatsManagement(datasetData, csvFiles, datasetScoreRanges, setSelectedDatasets);
 
   const handleChartTypeChange = (newTypes) => {
     updateSelectedChartTypes(newTypes);
@@ -79,6 +79,8 @@ function App() {
         getHeatmapDatasets={getHeatmapDatasets}
         hideMarkersWithHeatmap={hideMarkersWithHeatmap}
         setHideMarkersWithHeatmap={setHideMarkersWithHeatmap}
+        selectedChartTypes={selectedChartTypes}
+        currentStatsData={currentStatsData}
       />
 
       {showStats && (
@@ -88,12 +90,18 @@ function App() {
             selectedStatsDataset={selectedStatsDataset}
             setSelectedStatsDataset={setSelectedStatsDataset}
             csvFiles={csvFiles}
+            datasetScoreRanges={datasetScoreRanges}
+            datasetData={datasetData}
           />
           
           <ChartsSection
             currentStatsData={currentStatsData}
             selectedChartTypes={selectedChartTypes}
             setSelectedChartTypes={handleChartTypeChange}
+            selectedDatasets={selectedDatasets}
+            datasetData={datasetData}
+            datasetScoreRanges={datasetScoreRanges}
+            selectedStatsDataset={selectedStatsDataset}
           />
         </div>
       )}
