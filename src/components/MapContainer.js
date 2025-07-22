@@ -11,104 +11,143 @@ import { GeoJsonLoader } from './GeoJsonLoader';
 import { MeasurementDisplay } from './MeasurementDisplay';
 import { LayerControls, BottomControls } from './LayerControls';
 
+const GOOGLE_MAPS_API_KEY = 'AIzaSyCp6YMW24ocLyfToDWWFs_FmUuN7AwVm4c';
+
+/**
+ * Main map container component that integrates Google Maps with various layers
+ */
 function MapContainer(props) {
   const [showCensusTracts, setShowCensusTracts] = useState(false);
   const [csvData, setCsvData] = useState([]);
   const [csvLoaded, setCsvLoaded] = useState(false);
   const [zoom, setZoom] = useState(12);
-  const mapRef = useRef(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapRadiusLevel, setHeatmapRadiusLevel] = useState(5);
   const [layersDropdownOpen, setLayersDropdownOpen] = useState(false);
   const [scoreRangeDropdownOpen, setScoreRangeDropdownOpen] = useState(false);
+  
+  const mapRef = useRef(null);
   const controlBarRef = useRef(null);
   const streetViewRef = useRef(null);
 
-  // Custom hook for measurement functionality
-  const {
-    measurementMode,
-    setMeasurementMode,
-    measurementPoints,
-    measurementDistance,
-    resetMeasurement,
-    handleMapClick
-  } = useMeasurement();
+  const measurement = useMeasurement();
 
-  // Destructure props outside useEffect to avoid dependency issues
-  const { 
-    datasetData, 
-    updateDatasetScoreRange, 
-    getDatasetScoreRange 
+  // Destructure props for useCallback dependencies
+  const {
+    csvData: propsCsvData,
+    csvText: propsCsvText,
+    datasetData: propsDatasetData,
+    updateDatasetScoreRange: propsUpdateDatasetScoreRange,
+    getDatasetScoreRange: propsGetDatasetScoreRange,
+    resetAllFilters: propsResetAllFilters
   } = props;
 
-  console.log('MapContainer - datasetData:', { 
-    datasetDataKeys: Object.keys(datasetData || {}),
-    datasetDataLength: Object.keys(datasetData || {}).length,
-    datasetData: datasetData
-  });
-
-  // Handle dynamic CSV data from props
+  /**
+   * Handles CSV data updates from props
+   */
   const handleCSVDataUpdate = useCallback(() => {
-    if (props.csvData && props.csvData.length > 0) {
-      setCsvData(props.csvData);
+    if (propsCsvData && propsCsvData.length > 0) {
+      setCsvData(propsCsvData);
       setCsvLoaded(true);
-    } else if (props.csvText) {
+    } else if (propsCsvText) {
       try {
-        const parsed = parseCSV(props.csvText);
+        const parsed = parseCSV(propsCsvText);
         setCsvData(parsed);
         setCsvLoaded(true);
       } catch (error) {
         console.error('Error parsing CSV:', error);
       }
     }
-  }, [props.csvData, props.csvText]);
+  }, [propsCsvData, propsCsvText]);
 
-  useEffect(() => {
-    handleCSVDataUpdate();
-  }, [handleCSVDataUpdate]);
-
-  // Auto-detect score format and set appropriate ranges - now per dataset
+  /**
+   * Initializes score ranges for new datasets
+   */
   const initializeDatasetScoreRanges = useCallback(() => {
-    if (!datasetData || Object.keys(datasetData).length === 0) return;
+    if (!propsDatasetData || Object.keys(propsDatasetData).length === 0) return;
     
-    Object.entries(datasetData).forEach(([datasetName, datasetRows]) => {
+    Object.entries(propsDatasetData).forEach(([datasetName, datasetRows]) => {
       if (datasetRows.length > 0) {
         const format = detectCSVFormat(datasetRows);
-        if (format && updateDatasetScoreRange) {
-          const currentRange = getDatasetScoreRange ? getDatasetScoreRange(datasetName) : null;
+        if (format && propsUpdateDatasetScoreRange) {
+          const currentRange = propsGetDatasetScoreRange ? 
+            propsGetDatasetScoreRange(datasetName) : null;
+          
           if (!currentRange) {
-            updateDatasetScoreRange(datasetName, 'yes', true);
-            updateDatasetScoreRange(datasetName, 'no', true);
-            updateDatasetScoreRange(datasetName, 'min', 1);
-            updateDatasetScoreRange(datasetName, 'max', 10);
+            propsUpdateDatasetScoreRange(datasetName, 'yes', true);
+            propsUpdateDatasetScoreRange(datasetName, 'no', true);
+            propsUpdateDatasetScoreRange(datasetName, 'min', 1);
+            propsUpdateDatasetScoreRange(datasetName, 'max', 10);
           }
         }
       }
     });
-  }, [datasetData, updateDatasetScoreRange, getDatasetScoreRange]);
+  }, [propsDatasetData, propsUpdateDatasetScoreRange, propsGetDatasetScoreRange]);
 
-  useEffect(() => {
-    initializeDatasetScoreRanges();
-  }, [initializeDatasetScoreRanges]);
-
-  const handleMapLoad = (map) => {
+  /**
+   * Handles map initialization
+   */
+  const handleMapLoad = useCallback((map) => {
     mapRef.current = map;
     streetViewRef.current = map.getStreetView();
     map.addListener('zoom_changed', () => {
       setZoom(map.getZoom());
     });
-  };
+  }, []);
 
-  const resetFilters = () => {
-    if (props.resetAllFilters) {
-      props.resetAllFilters();
+  /**
+   * Resets all filters
+   */
+  const resetFilters = useCallback(() => {
+    if (propsResetAllFilters) {
+      propsResetAllFilters();
     }
+  }, [propsResetAllFilters]);
+
+  /**
+   * Wraps map click handler for measurement mode
+   */
+  const handleMapClickWrapper = useCallback((event) => {
+    measurement.handleMapClick(event, mapRef);
+  }, [measurement]);
+
+  /**
+   * Renders marker layers for selected datasets
+   */
+  const renderMarkerLayers = () => {
+    if (!props.datasetData || !props.selectedDatasets) return null;
+
+    return props.selectedDatasets.map(datasetName => {
+      const datasetRows = props.datasetData[datasetName];
+      
+      return (
+        <MarkerLayer
+          key={datasetName}
+          csvData={datasetRows}
+          measurementMode={measurement.measurementMode}
+          selectedMarker={selectedMarker}
+          setSelectedMarker={setSelectedMarker}
+          mapRef={mapRef}
+          zoom={zoom}
+          datasetName={datasetName}
+          datasetScoreRanges={props.datasetScoreRanges}
+          getDatasetScoreRange={props.getDatasetScoreRange}
+          showHeatmap={showHeatmap}
+          hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
+        />
+      );
+    });
   };
 
-  const handleMapClickWrapper = (event) => {
-    handleMapClick(event, mapRef);
-  };
+  // Effects
+  useEffect(() => {
+    handleCSVDataUpdate();
+  }, [handleCSVDataUpdate]);
+
+  useEffect(() => {
+    initializeDatasetScoreRanges();
+  }, [initializeDatasetScoreRanges]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -117,9 +156,9 @@ function MapContainer(props) {
         setControlBarOpen={props.setControlBarOpen}
         showCensusTracts={showCensusTracts}
         setShowCensusTracts={setShowCensusTracts}
-        measurementMode={measurementMode}
-        setMeasurementMode={setMeasurementMode}
-        resetMeasurement={resetMeasurement}
+        measurementMode={measurement.measurementMode}
+        setMeasurementMode={measurement.setMeasurementMode}
+        resetMeasurement={measurement.resetMeasurement}
         mapRef={mapRef}
         initialCenter={initialCenter}
         initialZoom={initialZoom}
@@ -156,7 +195,7 @@ function MapContainer(props) {
         currentStatsData={props.currentStatsData}
       />
 
-      <LoadScript googleMapsApiKey="AIzaSyCp6YMW24ocLyfToDWWFs_FmUuN7AwVm4c" libraries={["visualization"]}>
+      <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["visualization"]}>
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={center}
@@ -165,31 +204,7 @@ function MapContainer(props) {
           onLoad={handleMapLoad}
           onClick={handleMapClickWrapper}
         >
-          {/* Render separate MarkerLayer for each SELECTED dataset */}
-          {props.datasetData && props.selectedDatasets.map(datasetName => {
-            const datasetRows = props.datasetData[datasetName];
-            console.log(`Rendering MarkerLayer for ${datasetName}:`, { 
-              datasetRowsLength: datasetRows?.length,
-              firstRow: datasetRows?.[0]
-            });
-            
-            return (
-              <MarkerLayer
-                key={datasetName}
-                csvData={datasetRows}
-                measurementMode={measurementMode}
-                selectedMarker={selectedMarker}
-                setSelectedMarker={setSelectedMarker}
-                mapRef={mapRef}
-                zoom={zoom}
-                datasetName={datasetName}
-                datasetScoreRanges={props.datasetScoreRanges}
-                getDatasetScoreRange={props.getDatasetScoreRange}
-                showHeatmap={showHeatmap}
-                hideMarkersWithHeatmap={props.hideMarkersWithHeatmap}
-              />
-            );
-          })}
+          {renderMarkerLayers()}
           
           <HeatmapLayerWrapper
             showHeatmap={showHeatmap}
@@ -204,16 +219,16 @@ function MapContainer(props) {
           <GeoJsonLoader
             mapRef={mapRef}
             showCensusTracts={showCensusTracts}
-            measurementMode={measurementMode}
+            measurementMode={measurement.measurementMode}
           />
         </GoogleMap>
       </LoadScript>
       
       <MeasurementDisplay
-        measurementMode={measurementMode}
-        measurementPoints={measurementPoints}
-        measurementDistance={measurementDistance}
-        resetMeasurement={resetMeasurement}
+        measurementMode={measurement.measurementMode}
+        measurementPoints={measurement.measurementPoints}
+        measurementDistance={measurement.measurementDistance}
+        resetMeasurement={measurement.resetMeasurement}
       />
       
       <BottomControls

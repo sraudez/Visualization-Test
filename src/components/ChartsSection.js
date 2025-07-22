@@ -2,46 +2,178 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import { getDatasetChartData } from '../utils/chartDataUtils';
 
+/**
+ * Chart colors for consistent styling
+ */
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export function ChartsSection({ currentStatsData, selectedChartTypes, setSelectedChartTypes, selectedDatasets, datasetData, datasetScoreRanges, selectedStatsDataset }) {
-  const [chartTypesDropdownOpen, setChartTypesDropdownOpen] = useState(false);
+/**
+ * Chart type configurations
+ */
+const CHART_TYPES = {
+  pie: { label: 'Pie Chart (Yes/No)', component: 'PieChartComponent' },
+  bar: { label: 'Bar Chart (1-10)', component: 'BarChartComponent' },
+  line: { label: 'Line Chart (1-10)', component: 'LineChartComponent' },
+  scatter: { label: 'Scatter Plot (1-10)', component: 'ScatterChartComponent' }
+};
 
-  // Close dropdown on outside click
+/**
+ * Styles for the charts section
+ */
+const styles = {
+  container: {
+    marginBottom: 30
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15
+  },
+  title: {
+    color: '#555',
+    margin: 0
+  },
+  controls: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10
+  },
+  label: {
+    color: '#555',
+    fontWeight: 600,
+    fontSize: '14px'
+  },
+  dropdownContainer: {
+    position: 'relative'
+  },
+  dropdownButton: {
+    padding: 8,
+    borderRadius: 4,
+    background: 'white',
+    border: '1px solid #ccc',
+    cursor: 'pointer',
+    fontWeight: 600,
+    transition: 'all 0.2s ease',
+    minWidth: 120
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    background: 'white',
+    border: '1px solid #ccc',
+    borderRadius: 6,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+    padding: 8,
+    minWidth: 150,
+    zIndex: 10
+  },
+  checkboxLabel: {
+    display: 'block',
+    marginBottom: 8,
+    color: 'black'
+  },
+  noDataContainer: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#999',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    border: '1px dashed #ccc'
+  },
+  chartsContainer: {
+    display: 'flex',
+    gap: '20px',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start'
+  },
+  chartContainer: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '16px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    border: '1px solid #e0e0e0'
+  },
+  chartTitle: {
+    color: '#555',
+    marginBottom: '8px',
+    fontSize: '16px'
+  },
+  filterStatus: {
+    fontSize: '12px',
+    color: '#666',
+    marginBottom: '12px',
+    padding: '4px 8px',
+    backgroundColor: '#fff3cd',
+    borderRadius: '4px',
+    border: '1px solid #ffeaa7'
+  },
+  noDataMessage: {
+    textAlign: 'center',
+    padding: '40px',
+    color: '#999'
+  }
+};
+
+/**
+ * Hook for handling dropdown outside clicks
+ */
+function useDropdownOutsideClick(isOpen, setIsOpen, dropdownClass, buttonClass) {
   useEffect(() => {
     function handleClick(e) {
-      if (!e.target.closest('.chart-types-dropdown') && !e.target.closest('.chart-types-btn')) {
-        setChartTypesDropdownOpen(false);
+      if (!e.target.closest(dropdownClass) && !e.target.closest(buttonClass)) {
+        setIsOpen(false);
       }
     }
     
-    if (chartTypesDropdownOpen) {
+    if (isOpen) {
       document.addEventListener('mousedown', handleClick);
     }
     
     return () => {
       document.removeEventListener('mousedown', handleClick);
     };
-  }, [chartTypesDropdownOpen]);
+  }, [isOpen, setIsOpen, dropdownClass, buttonClass]);
+}
 
+/**
+ * Main charts section component
+ */
+export function ChartsSection({ 
+  currentStatsData, 
+  selectedChartTypes, 
+  setSelectedChartTypes, 
+  selectedDatasets, 
+  datasetData, 
+  datasetScoreRanges, 
+  selectedStatsDataset 
+}) {
+  const [chartTypesDropdownOpen, setChartTypesDropdownOpen] = useState(false);
+
+  useDropdownOutsideClick(chartTypesDropdownOpen, setChartTypesDropdownOpen, '.chart-types-dropdown', '.chart-types-btn');
+
+  /**
+   * Handles chart type selection toggle
+   */
   const handleChartTypeToggle = (chartType) => {
     const newSelected = selectedChartTypes.includes(chartType)
       ? selectedChartTypes.filter(type => type !== chartType)
       : [...selectedChartTypes, chartType];
-    console.log('Selected chart types:', newSelected);
     setSelectedChartTypes(newSelected);
   };
 
-  // Debug logging
-  console.log('ChartsSection - selectedChartTypes:', selectedChartTypes);
-  console.log('ChartsSection - selectedStatsDataset:', selectedStatsDataset);
-  console.log('ChartsSection - datasetData keys:', Object.keys(datasetData || {}));
-
+  /**
+   * Formats dataset filename for display
+   */
   const formatDatasetName = (filename) => {
     if (!filename) return 'Unknown Dataset';
     return filename.replace('.csv', '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
+  /**
+   * Gets filter status description for a dataset
+   */
   const getFilterStatus = (datasetName) => {
     const range = datasetScoreRanges[datasetName];
     if (!range) return null;
@@ -55,7 +187,9 @@ export function ChartsSection({ currentStatsData, selectedChartTypes, setSelecte
     return filters.length > 0 ? filters.join(', ') : null;
   };
 
-  // Calculate chart layout based on number of selected charts
+  /**
+   * Calculates chart layout based on number of selected charts
+   */
   const getChartLayout = () => {
     const chartCount = selectedChartTypes.length;
     
@@ -72,174 +206,146 @@ export function ChartsSection({ currentStatsData, selectedChartTypes, setSelecte
     }
   };
 
-  const chartLayout = getChartLayout();
-
-  // Get the current dataset to display charts for
-  const currentDataset = selectedStatsDataset || (selectedDatasets.length > 0 ? selectedDatasets[0] : null);
-  const filterStatus = currentDataset ? getFilterStatus(currentDataset) : null;
-
-  return (
-    <div style={{ marginBottom: 30 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
-        <h3 style={{ color: '#555', margin: 0 }}>Charts</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <label style={{ color: '#555', fontWeight: 600, fontSize: '14px' }}>Chart Types:</label>
-          
-          {/* Chart Types Dropdown */}
-          <div style={{ position: 'relative' }}>
-            <button
-              className="chart-types-btn"
-              style={{ 
-                padding: 8, 
-                borderRadius: 4, 
-                background: 'white', 
-                border: '1px solid #ccc', 
-                cursor: 'pointer', 
-                fontWeight: 600,
-                transition: 'all 0.2s ease',
-                minWidth: 120
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = '#f0f0f0';
-                e.target.style.borderColor = '#999';
-                e.target.style.transform = 'translateY(-1px)';
-                e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'white';
-                e.target.style.borderColor = '#ccc';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-              onClick={() => setChartTypesDropdownOpen(!chartTypesDropdownOpen)}
-            >
-              Charts ({selectedChartTypes.length})
-            </button>
-            {chartTypesDropdownOpen && (
-              <div className="chart-types-dropdown" style={{ 
-                position: 'absolute', 
-                top: 40, 
-                left: 0, 
-                background: 'white', 
-                border: '1px solid #ccc', 
-                borderRadius: 6, 
-                boxShadow: '0 2px 8px rgba(0,0,0,0.12)', 
-                padding: 8, 
-                minWidth: 150, 
-                zIndex: 10 
-              }}>
-                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedChartTypes.includes('pie')}
-                    onChange={() => handleChartTypeToggle('pie')}
-                  />
-                  Pie Chart (Yes/No)
-                </label>
-                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedChartTypes.includes('bar')}
-                    onChange={() => handleChartTypeToggle('bar')}
-                  />
-                  Bar Chart (1-10)
-                </label>
-                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedChartTypes.includes('line')}
-                    onChange={() => handleChartTypeToggle('line')}
-                  />
-                  Line Chart (1-10)
-                </label>
-                <label style={{ display: 'block', marginBottom: 8, color: 'black' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedChartTypes.includes('scatter')}
-                    onChange={() => handleChartTypeToggle('scatter')}
-                  />
-                  Scatter Plot (1-10)
-                </label>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {!currentDataset && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#999', 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: '8px',
-          border: '1px dashed #ccc'
-        }}>
-          <p>No dataset selected. Choose a dataset from the "Dataset:" dropdown above.</p>
+  /**
+   * Renders chart types dropdown
+   */
+  const renderChartTypesDropdown = () => (
+    <div style={styles.dropdownContainer}>
+      <button
+        className="chart-types-btn"
+        style={styles.dropdownButton}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#f0f0f0';
+          e.target.style.borderColor = '#999';
+          e.target.style.transform = 'translateY(-1px)';
+          e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'white';
+          e.target.style.borderColor = '#ccc';
+          e.target.style.transform = 'translateY(0)';
+          e.target.style.boxShadow = 'none';
+        }}
+        onClick={() => setChartTypesDropdownOpen(!chartTypesDropdownOpen)}
+      >
+        Charts ({selectedChartTypes.length})
+      </button>
+      {chartTypesDropdownOpen && (
+        <div className="chart-types-dropdown" style={styles.dropdown}>
+          {Object.entries(CHART_TYPES).map(([type, config]) => (
+            <label key={type} style={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={selectedChartTypes.includes(type)}
+                onChange={() => handleChartTypeToggle(type)}
+              />
+              {config.label}
+            </label>
+          ))}
         </div>
       )}
-      
-      {selectedChartTypes.length === 0 && currentDataset && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#999', 
-          backgroundColor: '#f8f9fa', 
-          borderRadius: '8px',
-          border: '1px dashed #ccc'
-        }}>
-          <p>No charts selected. Choose chart types from the dropdown above.</p>
-        </div>
-      )}
-      
-      <div style={{ 
-        display: 'flex', 
-        gap: '20px', 
-        flexWrap: 'wrap',
+    </div>
+  );
+
+  /**
+   * Renders no data message
+   */
+  const renderNoDataMessage = (message) => (
+    <div style={styles.noDataContainer}>
+      <p>{message}</p>
+    </div>
+  );
+
+  /**
+   * Renders chart components
+   */
+  const renderCharts = () => {
+    const currentDataset = selectedStatsDataset || (selectedDatasets.length > 0 ? selectedDatasets[0] : null);
+    const filterStatus = currentDataset ? getFilterStatus(currentDataset) : null;
+    const chartLayout = getChartLayout();
+
+    if (!currentDataset) {
+      return renderNoDataMessage('No dataset selected. Choose a dataset from the "Dataset:" dropdown above.');
+    }
+
+    if (selectedChartTypes.length === 0) {
+      return renderNoDataMessage('No charts selected. Choose chart types from the dropdown above.');
+    }
+
+    return (
+      <div style={{
+        ...styles.chartsContainer,
         justifyContent: selectedChartTypes.length <= 2 ? 'flex-start' : 'space-between'
       }}>
-        {selectedChartTypes.map(chartType => {
-          return (
-            <ChartContainer 
-              key={chartType}
-              title={`${formatDatasetName(currentDataset)} - ${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart`}
-              dataChartType={chartType}
-              filterStatus={filterStatus}
-              style={chartLayout}
-            >
-              {chartType === 'pie' && <PieChartComponent data={datasetData[currentDataset]} datasetName={currentDataset} datasetScoreRanges={datasetScoreRanges} datasetData={datasetData} />}
-              {chartType === 'bar' && <BarChartComponent data={datasetData[currentDataset]} datasetName={currentDataset} datasetScoreRanges={datasetScoreRanges} datasetData={datasetData} />}
-              {chartType === 'line' && <LineChartComponent data={datasetData[currentDataset]} datasetName={currentDataset} datasetScoreRanges={datasetScoreRanges} datasetData={datasetData} />}
-              {chartType === 'scatter' && <ScatterChartComponent data={datasetData[currentDataset]} datasetName={currentDataset} datasetScoreRanges={datasetScoreRanges} datasetData={datasetData} />}
-            </ChartContainer>
-          );
-        })}
+        {selectedChartTypes.map(chartType => (
+          <ChartContainer 
+            key={chartType}
+            title={`${formatDatasetName(currentDataset)} - ${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart`}
+            dataChartType={chartType}
+            filterStatus={filterStatus}
+            style={{ ...styles.chartContainer, ...chartLayout }}
+          >
+            {chartType === 'pie' && (
+              <PieChartComponent 
+                data={datasetData[currentDataset]} 
+                datasetName={currentDataset} 
+                datasetScoreRanges={datasetScoreRanges} 
+                datasetData={datasetData} 
+              />
+            )}
+            {chartType === 'bar' && (
+              <BarChartComponent 
+                data={datasetData[currentDataset]} 
+                datasetName={currentDataset} 
+                datasetScoreRanges={datasetScoreRanges} 
+                datasetData={datasetData} 
+              />
+            )}
+            {chartType === 'line' && (
+              <LineChartComponent 
+                data={datasetData[currentDataset]} 
+                datasetName={currentDataset} 
+                datasetScoreRanges={datasetScoreRanges} 
+                datasetData={datasetData} 
+              />
+            )}
+            {chartType === 'scatter' && (
+              <ScatterChartComponent 
+                data={datasetData[currentDataset]} 
+                datasetName={currentDataset} 
+                datasetScoreRanges={datasetScoreRanges} 
+                datasetData={datasetData} 
+              />
+            )}
+          </ChartContainer>
+        ))}
       </div>
+    );
+  };
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <h3 style={styles.title}>Charts</h3>
+        <div style={styles.controls}>
+          <label style={styles.label}>Chart Types:</label>
+          {renderChartTypesDropdown()}
+        </div>
+      </div>
+      {renderCharts()}
     </div>
   );
 }
 
+/**
+ * Container component for individual charts
+ */
 function ChartContainer({ title, children, dataChartType, filterStatus, style }) {
   return (
-    <div style={{ 
-      ...style,
-      backgroundColor: 'white',
-      borderRadius: '8px',
-      padding: '16px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      border: '1px solid #e0e0e0'
-    }} data-chart-type={dataChartType}>
-      <h4 style={{ color: '#555', marginBottom: '8px', fontSize: '16px' }}>{title}</h4>
+    <div style={style} data-chart-type={dataChartType}>
+      <h4 style={styles.chartTitle}>{title}</h4>
       {filterStatus && (
-        <div style={{ 
-          fontSize: '12px', 
-          color: '#666', 
-          marginBottom: '12px',
-          padding: '4px 8px',
-          backgroundColor: '#fff3cd',
-          borderRadius: '4px',
-          border: '1px solid #ffeaa7'
-        }}>
+        <div style={styles.filterStatus}>
           Filters: {filterStatus}
         </div>
       )}
@@ -248,6 +354,9 @@ function ChartContainer({ title, children, dataChartType, filterStatus, style })
   );
 }
 
+/**
+ * Pie chart component for yes/no data
+ */
 function PieChartComponent({ data, datasetName, datasetScoreRanges, datasetData }) {
   const pieData = getDatasetChartData(datasetData, datasetName, 'pie', datasetScoreRanges);
   
@@ -276,6 +385,9 @@ function PieChartComponent({ data, datasetName, datasetScoreRanges, datasetData 
   );
 }
 
+/**
+ * Bar chart component for numeric data
+ */
 function BarChartComponent({ data, datasetName, datasetScoreRanges, datasetData }) {
   const barData = getDatasetChartData(datasetData, datasetName, 'bar', datasetScoreRanges);
   
@@ -283,7 +395,6 @@ function BarChartComponent({ data, datasetName, datasetScoreRanges, datasetData 
     return <NoDataMessage />;
   }
 
-  // Check if data has 'category' (yes/no) or 'score' (numeric) format
   const dataKey = barData[0]?.category !== undefined ? 'category' : 'score';
   const valueKey = barData[0]?.count !== undefined ? 'count' : 'count';
 
@@ -298,6 +409,9 @@ function BarChartComponent({ data, datasetName, datasetScoreRanges, datasetData 
   );
 }
 
+/**
+ * Line chart component for numeric data
+ */
 function LineChartComponent({ data, datasetName, datasetScoreRanges, datasetData }) {
   const lineData = getDatasetChartData(datasetData, datasetName, 'line', datasetScoreRanges);
   
@@ -305,7 +419,6 @@ function LineChartComponent({ data, datasetName, datasetScoreRanges, datasetData
     return <NoDataMessage />;
   }
 
-  // Check if data has 'category' (yes/no) or 'score' (numeric) format
   const dataKey = lineData[0]?.category !== undefined ? 'category' : 'score';
   const valueKey = lineData[0]?.count !== undefined ? 'count' : 'count';
 
@@ -320,6 +433,9 @@ function LineChartComponent({ data, datasetName, datasetScoreRanges, datasetData
   );
 }
 
+/**
+ * Scatter plot component for numeric data
+ */
 function ScatterChartComponent({ data, datasetName, datasetScoreRanges, datasetData }) {
   const scatterData = getDatasetChartData(datasetData, datasetName, 'scatter', datasetScoreRanges);
   
@@ -338,9 +454,12 @@ function ScatterChartComponent({ data, datasetName, datasetScoreRanges, datasetD
   );
 }
 
+/**
+ * No data message component
+ */
 function NoDataMessage() {
   return (
-    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+    <div style={styles.noDataMessage}>
       No data available
     </div>
   );
